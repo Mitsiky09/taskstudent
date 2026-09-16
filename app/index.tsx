@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { COLORS, STORAGE_KEYS } from '@/constants';
+import { STORAGE_KEYS } from '@/constants';
+import { theme } from '@/constants/theme';
 import { useSession } from '@/context/SessionContext';
 import { readJSON } from '@/lib/storage';
 
@@ -31,12 +33,15 @@ export default function Boot() {
   }, [loading, onboardingSeen, user]);
 
   return (
-    <View className="flex-1 items-center justify-center" style={{ backgroundColor: COLORS.primary }}>
+    <View
+      className="flex-1 items-center justify-center"
+      style={{ backgroundColor: theme.colors.primary }}
+    >
       <View className="mb-5 h-24 w-24 items-center justify-center rounded-3xl bg-white">
-        <Text className="text-5xl">✓</Text>
+        <Ionicons name="checkmark" size={56} color={theme.colors.primary} />
       </View>
-      <Text className="text-3xl font-bold text-white">TaskStudent</Text>
-      <Text className="mt-2 text-white/80">Organise ta vie, simplement.</Text>
+      <Text className="text-3xl font-bold tracking-tight text-white">TaskStudent</Text>
+      <Text className="mt-2 text-sm text-white/80">Organise ta vie, simplement.</Text>
     </View>
   );
 }

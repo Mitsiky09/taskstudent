@@ -1,20 +1,17 @@
 import { useMemo, useState } from 'react';
-import {
-  FlatList,
-  Modal,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import Chip from '@/components/ui/Chip';
+import IconButton from '@/components/ui/IconButton';
+import SegmentedControl from '@/components/ui/SegmentedControl';
+import Sheet, { SheetAction } from '@/components/ui/Sheet';
+import TextField, { ClearButton } from '@/components/ui/TextField';
 import EmptyState from '@/components/EmptyState';
 import Header from '@/components/Header';
 import TaskCard from '@/components/TaskCard';
-import { COLORS, FALLBACK_PROJECT, getCategory } from '@/constants';
+import { FALLBACK_PROJECT, getCategory } from '@/constants';
+import { theme } from '@/constants/theme';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/hooks/useTasks';
 import { formatShortDate } from '@/lib/date';
@@ -43,7 +40,7 @@ const SORT_OPTIONS: { value: TaskSort; label: string }[] = [
   { value: 'priority', label: 'Priorité' },
 ];
 
-const ALL_CATEGORIES: Subject = { id: 'all', name: 'Toutes', color: '#64748b' };
+const ALL_CATEGORIES: Subject = { id: 'all', name: 'Toutes', color: theme.colors.textSecondary };
 
 export default function Aujourdhui() {
   const { tasks, toggleTask } = useTasks();
@@ -62,12 +59,17 @@ export default function Aujourdhui() {
 
   const shown = useMemo(() => {
     const now = new Date();
-    const dueToday = sortTasks(visibleTasks(tasks).filter((t) => isDueToday(t, now)), 'date');
+    const dueToday = sortTasks(
+      visibleTasks(tasks).filter((t) => isDueToday(t, now)),
+      'date'
+    );
     const byStatus = filterTasks(dueToday, filter, now);
     const byCategory =
       categoryId === 'all' ? byStatus : byStatus.filter((t) => t.subjectId === categoryId);
-    const searched = searchTasks(byCategory, query, (t) =>
-      getCategory(categories, t.subjectId).name
+    const searched = searchTasks(
+      byCategory,
+      query,
+      (t) => getCategory(categories, t.subjectId).name
     );
     const sorted = sortTasks(searched, sort);
 
@@ -80,9 +82,7 @@ export default function Aujourdhui() {
 
   const remainingCount = useMemo(
     () =>
-      visibleTasks(tasks).filter(
-        (t) => isDueToday(t, new Date()) && t.status === 'active'
-      ).length,
+      visibleTasks(tasks).filter((t) => isDueToday(t, new Date()) && t.status === 'active').length,
     [tasks]
   );
 
@@ -95,7 +95,7 @@ export default function Aujourdhui() {
     () =>
       categoryId === 'all'
         ? ALL_CATEGORIES
-        : categories.find((c) => c.id === categoryId) ?? ALL_CATEGORIES,
+        : (categories.find((c) => c.id === categoryId) ?? ALL_CATEGORIES),
     [categoryId, categories]
   );
 
@@ -116,135 +116,101 @@ export default function Aujourdhui() {
   };
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-slate-50">
-      <View className="px-4 pt-1">
+    <SafeAreaView edges={['top']} className="flex-1 bg-canvas">
+      <View className="px-5">
         <Header
           title="Aujourd'hui"
-          subtitle={`${formatShortDate(new Date())} · ${remainingCount} restante${remainingCount !== 1 ? 's' : ''}`}
+          subtitle={`${formatShortDate(new Date())} · ${remainingCount} restante${
+            remainingCount !== 1 ? 's' : ''
+          }`}
           right={
-            <View className="flex-row items-center gap-1">
-              <Pressable
+            <View className="flex-row items-center gap-2">
+              <IconButton
+                icon={searchOpen || query.length > 0 ? 'close' : 'search'}
                 onPress={() => setSearchOpen((o) => !o)}
-                accessibilityRole="button"
-                accessibilityLabel={searchOpen ? 'Fermer la recherche' : 'Rechercher'}
-                hitSlop={8}
-                className="h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white"
-              >
-                <Ionicons
-                  name={searchOpen || query.length > 0 ? 'close' : 'search'}
-                  size={20}
-                  color="#64748b"
-                />
-              </Pressable>
+                label={searchOpen ? 'Fermer la recherche' : 'Rechercher'}
+              />
 
-              <Pressable
-                onPress={() => setFiltersOpen(true)}
-                accessibilityRole="button"
-                accessibilityLabel="Ouvrir les filtres"
-                hitSlop={8}
-                className={`h-10 w-10 items-center justify-center rounded-full border ${
-                  hasActiveFilters
-                    ? 'border-indigo-200 bg-indigo-50'
-                    : 'border-slate-200 bg-white'
-                }`}
-              >
-                <Ionicons
-                  name="options-outline"
-                  size={20}
-                  color={hasActiveFilters ? '#4f46e5' : '#64748b'}
+              <View>
+                <IconButton
+                  icon="options-outline"
+                  onPress={() => setFiltersOpen(true)}
+                  label="Ouvrir les filtres"
                 />
-                {activeFilterCount > 0 && (
-                  <View className="absolute -right-0.5 -top-0.5 h-4 min-w-[16px] items-center justify-center rounded-full bg-indigo-600 px-1">
-                    <Text className="text-[10px] font-bold text-white">
-                      {activeFilterCount}
-                    </Text>
+                {activeFilterCount > 0 ? (
+                  <View className="absolute -right-0.5 -top-0.5 h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1">
+                    <Text className="text-[10px] font-bold text-white">{activeFilterCount}</Text>
                   </View>
-                )}
-              </Pressable>
+                ) : null}
+              </View>
             </View>
           }
         />
 
-        {searchOpen && (
-          <View className="mt-3 h-12 flex-row items-center rounded-2xl border border-slate-200 bg-white px-3.5">
-            <Ionicons name="search" size={20} color="#94a3b8" />
-            <TextInput
-              value={query}
-              onChangeText={setQuery}
-              placeholder="Rechercher…"
-              placeholderTextColor="#94a3b8"
-              accessibilityLabel="Rechercher une tâche du jour"
-              autoFocus
-              className="ml-2.5 flex-1 text-base text-slate-800"
-            />
-            {query.length > 0 && (
-              <Pressable onPress={() => setQuery('')} hitSlop={10}>
-                <Ionicons name="close-circle" size={20} color="#94a3b8" />
-              </Pressable>
-            )}
-          </View>
-        )}
+        {searchOpen ? (
+          <TextField
+            icon="search"
+            variant="surface"
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Rechercher…"
+            accessibilityLabel="Rechercher une tâche du jour"
+            autoFocus
+            containerClassName="mb-4 -mt-2"
+            right={query.length > 0 ? <ClearButton onPress={() => setQuery('')} /> : undefined}
+          />
+        ) : null}
 
-        {hasActiveFilters && (
+        {hasActiveFilters ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            className="mt-3"
+            className="-mt-2 mb-4"
             contentContainerStyle={{ gap: 8, paddingRight: 4 }}
           >
-            {filter !== 'all' && (
-              <Pressable
+            {filter !== 'all' ? (
+              <Chip
+                size="sm"
+                tone="soft"
+                closable
+                label={TODAY_FILTERS.find((f) => f.value === filter)?.label ?? ''}
                 onPress={() => setFilter('all')}
-                className="h-9 flex-row items-center gap-1.5 rounded-full bg-indigo-100 px-3.5"
-              >
-                <Text className="text-sm font-medium text-indigo-700">
-                  {TODAY_FILTERS.find((f) => f.value === filter)?.label}
-                </Text>
-                <Ionicons name="close" size={14} color="#4f46e5" />
-              </Pressable>
-            )}
-            {categoryId !== 'all' && (
-              <Pressable
+              />
+            ) : null}
+            {categoryId !== 'all' ? (
+              <Chip
+                size="sm"
+                tone="soft"
+                closable
+                color={activeCategory.color}
+                label={activeCategory.name}
                 onPress={() => setCategoryId('all')}
-                className="h-9 flex-row items-center gap-1.5 rounded-full px-3.5"
-                style={{ backgroundColor: `${activeCategory.color}22` }}
-              >
-                <View
-                  className="h-2 w-2 rounded-full"
-                  style={{ backgroundColor: activeCategory.color }}
-                />
-                <Text
-                  className="text-sm font-medium"
-                  style={{ color: activeCategory.color }}
-                >
-                  {activeCategory.name}
-                </Text>
-                <Ionicons name="close" size={14} color={activeCategory.color} />
-              </Pressable>
-            )}
-            {sort !== 'date' && (
-              <Pressable
+              />
+            ) : null}
+            {sort !== 'date' ? (
+              <Chip
+                size="sm"
+                tone="soft"
+                closable
+                label="Priorité"
                 onPress={() => setSort('date')}
-                className="h-9 flex-row items-center gap-1.5 rounded-full bg-slate-200 px-3.5"
-              >
-                <Text className="text-sm font-medium text-slate-700">Priorité</Text>
-                <Ionicons name="close" size={14} color="#475569" />
-              </Pressable>
-            )}
+              />
+            ) : null}
             <Pressable
               onPress={resetFilters}
               className="h-9 items-center justify-center rounded-full px-3"
+              accessibilityRole="button"
             >
-              <Text className="text-sm font-medium text-slate-500">Tout effacer</Text>
+              <Text className="text-sm font-medium text-muted">Tout effacer</Text>
             </Pressable>
           </ScrollView>
-        )}
+        ) : null}
       </View>
 
       <FlatList
         data={shown}
         keyExtractor={(task) => task.id}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 150 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 150 }}
         renderItem={({ item }) => (
           <TaskCard
             task={item}
@@ -273,167 +239,52 @@ export default function Aujourdhui() {
         }
       />
 
-      <Modal
+      <Sheet
         visible={filtersOpen}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setFiltersOpen(false)}
+        onClose={() => setFiltersOpen(false)}
+        title="Filtres"
+        action={hasActiveFilters ? { label: 'Réinitialiser', onPress: resetFilters } : undefined}
+        footer={
+          <SheetAction
+            label={`Voir ${shown.length} tâche${shown.length !== 1 ? 's' : ''}`}
+            onPress={() => setFiltersOpen(false)}
+          />
+        }
       >
-        <Pressable
-          className="flex-1 justify-end bg-black/40"
-          onPress={() => setFiltersOpen(false)}
+        <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-faint">
+          Trier par
+        </Text>
+        <SegmentedControl items={SORT_OPTIONS} value={sort} onChange={setSort} className="mb-6" />
+
+        <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-faint">
+          Statut
+        </Text>
+        <SegmentedControl
+          items={TODAY_FILTERS}
+          value={filter}
+          onChange={setFilter}
+          className="mb-6"
+        />
+
+        <Text className="mb-2 text-xs font-semibold uppercase tracking-wider text-faint">
+          Catégorie
+        </Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 10, paddingVertical: 4, paddingRight: 8 }}
         >
-          <Pressable
-            className="rounded-t-3xl bg-white px-5 pb-10 pt-3"
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View className="mb-4 items-center">
-              <View className="h-1 w-10 rounded-full bg-slate-200" />
-            </View>
-
-            <View className="mb-5 flex-row items-center justify-between">
-              <Text className="text-lg font-semibold text-slate-900">Filtres</Text>
-              {hasActiveFilters && (
-                <Pressable onPress={resetFilters} hitSlop={8}>
-                  <Text className="text-sm font-medium text-indigo-600">Réinitialiser</Text>
-                </Pressable>
-              )}
-            </View>
-
-            <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Trier par
-            </Text>
-            <View className="mb-6 flex-row rounded-2xl bg-slate-100 p-1">
-              {SORT_OPTIONS.map((item) => {
-                const selected = sort === item.value;
-                return (
-                  <Pressable
-                    key={item.value}
-                    onPress={() => setSort(item.value)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    className={`flex-1 items-center justify-center rounded-xl py-3.5 ${
-                      selected ? 'bg-white' : ''
-                    }`}
-                    style={
-                      selected
-                        ? {
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 1 },
-                            shadowOpacity: 0.06,
-                            shadowRadius: 2,
-                            elevation: 1,
-                          }
-                        : undefined
-                    }
-                  >
-                    <Text
-                      className={`text-sm ${
-                        selected
-                          ? 'font-semibold text-slate-900'
-                          : 'font-medium text-slate-500'
-                      }`}
-                    >
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Statut
-            </Text>
-            <View className="mb-6 flex-row rounded-2xl bg-slate-100 p-1">
-              {TODAY_FILTERS.map((item) => {
-                const selected = filter === item.value;
-                return (
-                  <Pressable
-                    key={item.value}
-                    onPress={() => setFilter(item.value)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    className={`flex-1 items-center justify-center rounded-xl py-3.5 ${
-                      selected ? 'bg-white' : ''
-                    }`}
-                    style={
-                      selected
-                        ? {
-                            shadowColor: '#000',
-                            shadowOffset: { width: 0, height: 1 },
-                            shadowOpacity: 0.06,
-                            shadowRadius: 2,
-                            elevation: 1,
-                          }
-                        : undefined
-                    }
-                  >
-                    <Text
-                      className={`text-sm ${
-                        selected
-                          ? 'font-semibold text-slate-900'
-                          : 'font-medium text-slate-500'
-                      }`}
-                    >
-                      {item.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <Text className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-              Catégorie
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 10, paddingVertical: 4, paddingRight: 8 }}
-            >
-              {[ALL_CATEGORIES, ...categories].map((category) => {
-                const selected = categoryId === category.id;
-                return (
-                  <Pressable
-                    key={category.id}
-                    onPress={() => setCategoryId(category.id)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    className={`h-11 flex-row items-center gap-2.5 rounded-full px-5 ${
-                      selected ? '' : 'border border-slate-200 bg-slate-50'
-                    }`}
-                    style={selected ? { backgroundColor: category.color } : undefined}
-                  >
-                    {!selected && (
-                      <View
-                        className="h-2.5 w-2.5 rounded-full"
-                        style={{ backgroundColor: category.color }}
-                      />
-                    )}
-                    <Text
-                      className={`text-sm ${
-                        selected
-                          ? 'font-semibold text-white'
-                          : 'font-medium text-slate-600'
-                      }`}
-                    >
-                      {category.name}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-
-            <Pressable
-              onPress={() => setFiltersOpen(false)}
-              className="mt-8 items-center rounded-2xl bg-indigo-600 py-4"
-            >
-              <Text className="text-base font-semibold text-white">
-                Voir {shown.length} tâche{shown.length !== 1 ? 's' : ''}
-              </Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
+          {[ALL_CATEGORIES, ...categories].map((category) => (
+            <Chip
+              key={category.id}
+              label={category.name}
+              color={category.color}
+              selected={categoryId === category.id}
+              onPress={() => setCategoryId(category.id)}
+            />
+          ))}
+        </ScrollView>
+      </Sheet>
     </SafeAreaView>
   );
 }

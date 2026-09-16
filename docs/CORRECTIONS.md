@@ -162,3 +162,51 @@ volontairement isolée de React Native dans `lib/`, ce qui permet de tester en
 environnement Node sans monter de rendu. README complet : problématique,
 fonctionnalités, installation, arborescence, choix techniques justifiés,
 décisions notables, limites connues et perspectives.
+
+---
+
+## 11. Unification du style de l'application
+
+**Problème.** Deux chartes graphiques coexistaient. Une partie de l'application
+(Accueil, Aujourd'hui, création de tâche) avait été refondue en indigo
+`#4f46e5` avec une palette `slate`, des cartes blanches cerclées et des coins
+très arrondis ; le reste (en-têtes, filtres, boutons, onboarding, cartes de
+tâche, calendrier, profil, statistiques, authentification) utilisait encore le
+rouge Todoist `#db4c3f`, la palette `gray` et des surfaces sans bordure. Le
+détail d'une tâche introduisait même un troisième bleu (`#3B82F6`) et la famille
+d'icônes Feather, alors que le reste de l'application utilise Ionicons. Une
+trentaine de couleurs hexadécimales étaient écrites en dur, parfois plusieurs
+fois dans un même fichier, et les feuilles modales, les champs de saisie et les
+pastilles étaient recopiés écran par écran avec des variantes.
+
+**Correction.** Mise en place d'un design system unique, documenté dans
+`docs/DESIGN_SYSTEM.md` :
+
+- **Tokens centralisés** dans `constants/theme.ts` (nuances, tokens sémantiques,
+  rayons, ombres, typographies, surfaces, `withAlpha`). `tailwind.config.js`
+  importe cette palette et expose les classes correspondantes (`bg-primary`,
+  `bg-canvas`, `text-ink`, `text-faint`, `border-line-soft`…) : il n'y a plus
+  qu'une définition de chaque couleur. L'ancien `COLORS.primary` (`#db4c3f`,
+  rouge Todoist) disparaît au profit de `theme.colors.primary` (`#4f46e5`) :
+  filtres, boutons, onboarding, calendrier, profil et case à cocher des tâches
+  s'alignent d'un coup.
+- **Composants partagés** dans `components/ui/` : `Screen`, `Card`, `Sheet`
+  (+ `SheetOption`, `SheetAction`), `Chip`, `SegmentedControl`, `TextField`,
+  `IconButton`, `SectionHeader`. Ils remplacent les blocs dupliqués (deux
+  sélecteurs à segments recopiés dans les filtres, quatre feuilles modales
+  recodées à la main, cinq variantes de champ de saisie).
+- **Écrans repris** un par un : même fond `bg-canvas`, mêmes marges latérales
+  (20 pt), mêmes cartes, mêmes en-têtes, mêmes couleurs d'état (retard =
+  `danger`, reporté = `warning`, terminé = `success`).
+- **Une seule famille d'icônes** : Ionicons partout, Feather retiré.
+- **Barre d'onglets flottante inchangée** : sa structure, sa géométrie et ses
+  animations sont conservées telles quelles ; seules ses couleurs pointent
+  désormais sur les tokens (le bouton « + » passe de `#5f58ea` à la couleur de
+  marque, seul écart visuel).
+
+Au passage, deux défauts ont été corrigés : les sous-tâches créées depuis la
+feuille d'ajout rapide étaient enregistrées sans identifiant ni état
+(`as any` masquait l'erreur de type), et `app/task/[id].tsx` définissait ses
+composants `Row` et `Divider` pendant le rendu (13 erreurs ESLint sur ce
+fichier). L'analyse statique est désormais vierge sur l'ensemble du dépôt
+(17 problèmes avant, 0 après).

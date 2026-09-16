@@ -1,4 +1,13 @@
-import { addDays, daysBetween, fromDateKey, isSameDay, isSameMonth, toDateKey } from '@/lib/date';
+import {
+  addDays,
+  daysBetween,
+  formatDueLabel,
+  fromDateKey,
+  isEndOfDay,
+  isSameDay,
+  isSameMonth,
+  toDateKey,
+} from '@/lib/date';
 
 describe('toDateKey', () => {
   it('formate la date en heure locale', () => {
@@ -48,5 +57,43 @@ describe('comparaisons', () => {
   it('addDays et daysBetween sont cohérents', () => {
     const start = new Date(2026, 2, 10, 12);
     expect(daysBetween(start, addDays(start, 7))).toBe(7);
+  });
+});
+
+describe('isEndOfDay', () => {
+  it('reconnaît une échéance posée en fin de journée', () => {
+    expect(isEndOfDay(new Date(2026, 2, 10, 23, 59))).toBe(true);
+    expect(isEndOfDay(new Date(2026, 2, 10, 23, 59, 59, 999))).toBe(true);
+  });
+
+  it('refuse une heure réellement choisie', () => {
+    expect(isEndOfDay(new Date(2026, 2, 10, 23, 30))).toBe(false);
+    expect(isEndOfDay(new Date(2026, 2, 10, 18, 0))).toBe(false);
+  });
+});
+
+describe('formatDueLabel', () => {
+  const now = new Date(2026, 2, 10, 8, 0);
+
+  it('nomme le jour du jour et garde l’heure choisie', () => {
+    expect(formatDueLabel(new Date(2026, 2, 10, 14, 30), now)).toBe("Aujourd'hui 14:30");
+  });
+
+  it('masque l’heure d’une échéance « fin de journée »', () => {
+    expect(formatDueLabel(new Date(2026, 2, 10, 23, 59, 59, 999), now)).toBe("Aujourd'hui");
+  });
+
+  it('nomme demain et hier', () => {
+    expect(formatDueLabel(new Date(2026, 2, 11, 9, 5), now)).toBe('Demain 09:05');
+    expect(formatDueLabel(new Date(2026, 2, 9, 23, 59), now)).toBe('Hier');
+  });
+
+  it('date au-delà, sans l’année en cours', () => {
+    expect(formatDueLabel(new Date(2026, 4, 20, 23, 59), now)).toBe('20 mai');
+    expect(formatDueLabel(new Date(2026, 4, 20, 17, 0), now)).toBe('20 mai, 17:00');
+  });
+
+  it('ajoute l’année pour une échéance lointaine', () => {
+    expect(formatDueLabel(new Date(2027, 0, 5, 23, 59), now)).toBe('5 janv. 2027');
   });
 });

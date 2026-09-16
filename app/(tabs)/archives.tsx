@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, SectionList, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, Pressable, SectionList, Text } from 'react-native';
 import { router } from 'expo-router';
+import Screen from '@/components/ui/Screen';
+import TextField from '@/components/ui/TextField';
 import EmptyState from '@/components/EmptyState';
 import FilterBar from '@/components/FilterBar';
 import Header from '@/components/Header';
@@ -33,7 +34,11 @@ export default function Archives() {
       filter === 'month'
         ? archives.filter((t) => t.archivedAt !== null && isSameMonth(new Date(t.archivedAt), now))
         : archives;
-    const found = searchTasks(base, query, (t) => getCategory(settings.categories, t.subjectId).name);
+    const found = searchTasks(
+      base,
+      query,
+      (t) => getCategory(settings.categories, t.subjectId).name
+    );
 
     if (filter !== 'project') {
       return [{ title: '', data: sortTasks(found, 'date') }];
@@ -63,41 +68,41 @@ export default function Archives() {
   );
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-slate-50">
-      <View className="px-4">
-        <Header
-          title="Archives"
-          subtitle={`${thisMonth.length} tâche${thisMonth.length > 1 ? 's' : ''} archivée${
-            thisMonth.length > 1 ? 's' : ''
-          } ce mois-ci`}
-          right={
-            archives.length > 0 ? (
-              <Pressable onPress={confirmClear} accessibilityRole="button" hitSlop={8}>
-                <Text className="font-semibold text-red-500">Tout vider</Text>
-              </Pressable>
-            ) : undefined
-          }
-        />
+    <Screen>
+      <Header
+        title="Archives"
+        subtitle={`${thisMonth.length} tâche${thisMonth.length > 1 ? 's' : ''} archivée${
+          thisMonth.length > 1 ? 's' : ''
+        } ce mois-ci`}
+        right={
+          archives.length > 0 ? (
+            <Pressable onPress={confirmClear} accessibilityRole="button" hitSlop={8}>
+              <Text className="text-sm font-semibold text-danger">Tout vider</Text>
+            </Pressable>
+          ) : undefined
+        }
+      />
 
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Rechercher par titre ou projet…"
-          accessibilityLabel="Rechercher dans les archives"
-          className="mb-4 h-12 rounded-xl bg-white px-4"
-        />
+      <TextField
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Rechercher par titre ou projet…"
+        accessibilityLabel="Rechercher dans les archives"
+        variant="surface"
+        containerClassName="mb-4"
+      />
 
-        <FilterBar items={FILTERS} value={filter} onChange={setFilter} />
-      </View>
+      <FilterBar items={FILTERS} value={filter} onChange={setFilter} />
 
       <SectionList
+        className="flex-1"
         sections={sections}
         keyExtractor={(task) => task.id}
         renderItem={renderItem}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 150 }}
+        contentContainerStyle={{ paddingBottom: 150 }}
         renderSectionHeader={({ section }) =>
           section.title ? (
-            <Text className="mb-2 mt-2 text-sm font-bold uppercase text-gray-400">
+            <Text className="mb-2 mt-2 text-xs font-semibold uppercase tracking-wider text-faint">
               {section.title}
             </Text>
           ) : null
@@ -110,6 +115,6 @@ export default function Archives() {
           />
         }
       />
-    </SafeAreaView>
+    </Screen>
   );
 }

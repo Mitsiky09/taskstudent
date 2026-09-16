@@ -1,13 +1,15 @@
 import { Alert, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, getCategory } from '@/constants';
-import { useSettings } from '@/context/SettingsContext';
-import { useTasks } from '@/hooks/useTasks';
-import { addDays, formatShortDate, formatTime } from '@/lib/date';
-import { isOverdue, isReported } from '@/lib/tasks';
-import { Task } from '@/types';
+import Card from '@/components/ui/Card';
 import PriorityDot from './PriorityDot';
 import SubjectTag from './SubjectTag';
+import { getCategory } from '@/constants';
+import { theme } from '@/constants/theme';
+import { useSettings } from '@/context/SettingsContext';
+import { useTasks } from '@/hooks/useTasks';
+import { addDays, formatDueLabel } from '@/lib/date';
+import { isOverdue, isReported } from '@/lib/tasks';
+import { Task } from '@/types';
 
 interface TaskCardProps {
   task: Task;
@@ -16,6 +18,24 @@ interface TaskCardProps {
   readOnly?: boolean;
 }
 
+/**
+ * Carte de tâche : deux lignes, et rien d'autre.
+ *
+ * Hiérarchie retenue après retour utilisateur (« trop surchargé ») :
+ *
+ * 1. **Ligne 1** — case à cocher, titre, point de priorité. Le point n'est
+ *    affiché que pour la priorité haute : P3 est la valeur par défaut à la
+ *    création, le montrer sur chaque carte n'apporte aucune information.
+ * 2. **Ligne 2** — catégorie (point coloré + nom discret) et échéance
+ *    compacte. L'état passe par la couleur de l'échéance : rouge si retard,
+ *    ambre si reportée. Les badges « En retard » / « Reporté » répétaient
+ *    cette information.
+ *
+ * Retiré de la carte : la durée estimée (`60 min`), l'icône « reporter »
+ * permanente (remplacée par un appui long ; l'écran de détail conserve ses
+ * raccourcis) et la pastille de catégorie à fond teinté. Ne restent à droite
+ * que deux indicateurs utiles : la répétition et l'avancement des sous-tâches.
+ */
 export default function TaskCard({ task, onPress, onToggle, readOnly = false }: TaskCardProps) {
   const { settings } = useSettings();
   const { reportTask } = useTasks();
@@ -35,12 +55,19 @@ export default function TaskCard({ task, onPress, onToggle, readOnly = false }: 
     ]);
   };
 
+  const dueClass = late
+    ? 'font-semibold text-danger'
+    : reported
+      ? 'font-medium text-warning-600'
+      : 'text-muted';
+
   return (
-    <Pressable
+    <Card
+      variant="card"
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={`Tâche ${task.title}`}
-      className="mb-3 flex-row rounded-2xl bg-white p-4 shadow-sm"
+      onLongPress={readOnly ? undefined : report}
+      accessibilityLabel={`Tâche ${task.title}, ${formatDueLabel(due)}`}
+      className="mb-2.5 flex-row"
     >
       {readOnly ? null : (
         <Pressable
@@ -49,12 +76,13 @@ export default function TaskCard({ task, onPress, onToggle, readOnly = false }: 
           accessibilityRole="checkbox"
           accessibilityState={{ checked: completed }}
           accessibilityLabel={completed ? 'Marquer comme à faire' : 'Marquer comme terminée'}
-          className={`mr-3 mt-1 h-6 w-6 items-center justify-center rounded-full border-2 ${
-            completed ? '' : 'border-gray-300'
+          className={`mr-3 mt-0.5 h-6 w-6 items-center justify-center rounded-full border-2 ${
+            completed ? 'border-primary bg-primary' : 'border-line'
           }`}
-          style={completed ? { borderColor: COLORS.primary, backgroundColor: COLORS.primary } : undefined}
         >
-          <Text className="text-xs text-white">{completed ? '✓' : ''}</Text>
+          {completed ? (
+            <Ionicons name="checkmark" size={14} color={theme.colors.onPrimary} />
+          ) : null}
         </Pressable>
       )}
 
@@ -62,55 +90,41 @@ export default function TaskCard({ task, onPress, onToggle, readOnly = false }: 
         <View className="flex-row items-center">
           <Text
             numberOfLines={1}
-            className={`flex-1 text-base font-semibold ${
-              completed ? 'text-gray-400 line-through' : 'text-gray-900'
+            className={`flex-1 text-[15px] font-semibold ${
+              completed ? 'text-faint line-through' : 'text-ink'
             }`}
           >
             {task.title}
           </Text>
-          <PriorityDot priority={task.priority} />
+          {task.priority === 'high' ? (
+            <View className="ml-2">
+              <PriorityDot priority={task.priority} />
+            </View>
+          ) : null}
         </View>
 
-        <View className="mb-2 mt-1 flex-row items-center">
-          <Text className={`text-sm ${late ? 'font-semibold text-red-500' : 'text-gray-500'}`}>
-            {formatShortDate(due)} · {formatTime(due)}
-            {task.durationMinutes ? ` · ${task.durationMinutes} min` : ''}
+        <View className="mt-1 flex-row items-center">
+          <SubjectTag category={category} className="shrink" />
+          <Text className="mx-1.5 text-[13px] text-faint">·</Text>
+          <Text className={`shrink-0 text-[13px] ${dueClass}`} numberOfLines={1}>
+            {formatDueLabel(due)}
           </Text>
-          {late ? (
-            <View className="ml-2 rounded-full bg-red-50 px-2 py-0.5">
-              <Text className="text-xs font-semibold text-red-500">En retard</Text>
-            </View>
-          ) : null}
-          {reported && !late ? (
-            <View className="ml-2 rounded-full bg-amber-50 px-2 py-0.5">
-              <Text className="text-xs font-semibold text-amber-600">Reporté</Text>
-            </View>
-          ) : null}
-          {readOnly ? null : (
-            <Pressable
-              onPress={report}
-              hitSlop={6}
-              accessibilityRole="button"
-              accessibilityLabel="Reporter cette tâche"
-              className="ml-auto pl-2"
-            >
-              <Ionicons name="calendar-outline" size={15} color="#94a3b8" />
-            </Pressable>
-          )}
-        </View>
 
-        <View className="flex-row items-center">
-          <SubjectTag category={category} />
-          {task.subtasks.length > 0 ? (
-            <Text className="ml-2 text-xs text-gray-400">
-              {doneSubtasks}/{task.subtasks.length} sous-tâches
-            </Text>
-          ) : null}
-          {task.repeat !== 'none' ? (
-            <Ionicons name="repeat-outline" size={14} color="#94a3b8" style={{ marginLeft: 6 }} />
-          ) : null}
+          <View className="ml-auto flex-row items-center gap-2 pl-2">
+            {task.repeat !== 'none' ? (
+              <Ionicons name="repeat-outline" size={13} color={theme.colors.icon} />
+            ) : null}
+            {task.subtasks.length > 0 ? (
+              <View className="flex-row items-center gap-1">
+                <Ionicons name="checkbox-outline" size={13} color={theme.colors.icon} />
+                <Text className="text-xs text-faint">
+                  {doneSubtasks}/{task.subtasks.length}
+                </Text>
+              </View>
+            ) : null}
+          </View>
         </View>
       </View>
-    </Pressable>
+    </Card>
   );
 }

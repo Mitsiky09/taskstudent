@@ -3,7 +3,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { COLORS } from '@/constants';
+import { theme } from '@/constants/theme';
 import { SessionProvider } from '@/context/SessionContext';
 import { SettingsProvider } from '@/context/SettingsContext';
 import { TasksProvider } from '@/context/TasksContext';
@@ -19,7 +19,7 @@ export default function RootLayout() {
               <Stack
                 screenOptions={{
                   headerShown: false,
-                  contentStyle: { backgroundColor: COLORS.background },
+                  contentStyle: { backgroundColor: theme.colors.background },
                 }}
               >
                 {/* On déclare les onglets */}

@@ -11,7 +11,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import DateTimeField from '@/components/DateTimeField';
-import { COLORS, FALLBACK_PROJECT, getCategory, PRIORITY_COLORS, PRIORITY_LABELS } from '@/constants';
+import { FALLBACK_PROJECT, getCategory, PRIORITY_COLORS, PRIORITY_LABELS } from '@/constants';
+import { shadows, surfaceStyles, theme, withAlpha } from '@/constants/theme';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/hooks/useTasks';
 import { addDays, endOfDay, formatShortDate } from '@/lib/date';
@@ -19,7 +20,8 @@ import { dueToDate, parseQuickAdd, QuickChip } from '@/lib/quickadd';
 import { Priority, Subject } from '@/types';
 
 /**
- * Ajout rapide façon Todoist : champ unique, bouton rouge, barre d'icônes.
+ * Ajout rapide : champ unique, bouton d'envoi, barre d'icônes. Couleurs et
+ * surfaces alignées sur le design system.
  */
 
 const ONE_HOUR_MS = 3_600_000;
@@ -42,9 +44,9 @@ const DATE_CHOICES: { value: DateQuick; label: string }[] = [
 ];
 
 function chipColor(chip: QuickChip, categories: Subject[]): string {
-  if (chip.kind === 'date') return COLORS.primary;
+  if (chip.kind === 'date') return theme.colors.primary;
   if (chip.kind === 'priority') return PRIORITY_COLORS[chip.priority ?? 'medium'];
-  if (chip.unknown) return '#d97706';
+  if (chip.unknown) return theme.colors.warning;
   return getCategory(categories, chip.subjectId ?? '').color;
 }
 
@@ -62,10 +64,10 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
   const [panel, setPanel] = useState<Panel>(null);
   const [saving, setSaving] = useState(false);
 
-  const parsed = useMemo(() => parseQuickAdd(title, { subjects: settings.categories }), [
-    title,
-    settings.categories,
-  ]);
+  const parsed = useMemo(
+    () => parseQuickAdd(title, { subjects: settings.categories }),
+    [title, settings.categories]
+  );
 
   const due = useMemo(() => {
     if (parsed.due) return dueToDate(parsed.due);
@@ -93,7 +95,10 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
   const hasProjectToken = parsed.subjectToken;
 
   const hasExplicitDate =
-    parsed.due != null || dateQuick === 'tomorrow' || dateQuick === 'week' || dateQuick === 'custom';
+    parsed.due != null ||
+    dateQuick === 'tomorrow' ||
+    dateQuick === 'week' ||
+    dateQuick === 'custom';
 
   const canSubmit = parsed.title.trim().length > 0 && !saving;
 
@@ -146,13 +151,13 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
       ? parsed.chips.find((c) => c.kind === 'date')?.label
       : dateQuick === 'custom'
         ? formatShortDate(customDue)
-        : DATE_CHOICES.find((c) => c.value === dateQuick)?.label ?? "Aujourd'hui";
+        : (DATE_CHOICES.find((c) => c.value === dateQuick)?.label ?? "Aujourd'hui");
 
   const project = getCategory(settings.categories, projectId);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={resetAndClose}>
-      <View className="flex-1 justify-end bg-black/30">
+      <View className="flex-1 justify-end" style={{ backgroundColor: theme.colors.overlayLight }}>
         <Pressable
           onPress={resetAndClose}
           accessibilityRole="button"
@@ -161,11 +166,11 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
         />
 
         <KeyboardAvoidingView behavior="padding" className="justify-end">
-          <View className="rounded-t-2xl bg-white px-4 pb-8 pt-3 shadow-2xl">
-            <View className="mb-1 h-1 w-10 self-center rounded-full bg-gray-300" />
+          <View className={`${surfaceStyles.sheet} px-5 pb-8 pt-3`} style={shadows.raised}>
+            <View className={`${surfaceStyles.handle} mb-1`} />
 
             <View className="flex-row items-start">
-              <View className="min-h-[52px] flex-1 border-b border-gray-200 pb-2">
+              <View className="min-h-[52px] flex-1 border-b border-line pb-2">
                 <TextInput
                   autoFocus
                   value={title}
@@ -176,8 +181,8 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
                   returnKeyType="done"
                   multiline
                   maxLength={200}
-                  placeholderTextColor="#b3b3b3"
-                  className="text-base text-gray-900"
+                  placeholderTextColor={theme.colors.placeholder}
+                  className="text-base text-ink"
                   style={{ minHeight: 28, paddingVertical: 4 }}
                 />
 
@@ -193,8 +198,8 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
                       return (
                         <View
                           key={`${chip.kind}-${chip.label}-${index}`}
-                          className="flex-row items-center rounded-md px-2 py-1"
-                          style={{ backgroundColor: `${color}18` }}
+                          className="flex-row items-center rounded-lg px-2 py-1"
+                          style={{ backgroundColor: withAlpha(color, 0.14) }}
                         >
                           <Text className="text-xs font-medium" style={{ color }}>
                             {chip.label}
@@ -212,9 +217,15 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
                 accessibilityRole="button"
                 accessibilityLabel="Ajouter la tâche"
                 className="ml-3 mt-1 h-10 w-10 items-center justify-center rounded-full"
-                style={{ backgroundColor: canSubmit ? COLORS.primary : '#e5e5e5' }}
+                style={{
+                  backgroundColor: canSubmit ? theme.colors.primary : theme.colors.surfacePressed,
+                }}
               >
-                <Ionicons name="arrow-up" size={20} color={canSubmit ? '#fff' : '#a3a3a3'} />
+                <Ionicons
+                  name="arrow-up"
+                  size={20}
+                  color={canSubmit ? theme.colors.onPrimary : theme.colors.placeholder}
+                />
               </Pressable>
             </View>
 
@@ -228,11 +239,13 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
                 <Ionicons
                   name="calendar-outline"
                   size={22}
-                  color={hasDateToken || dateQuick !== 'today' ? COLORS.primary : '#808080'}
+                  color={
+                    hasDateToken || dateQuick !== 'today'
+                      ? theme.colors.primary
+                      : theme.colors.textMuted
+                  }
                 />
-                {!hasDateToken ? (
-                  <Text className="text-sm text-gray-500">{dateLabel}</Text>
-                ) : null}
+                {!hasDateToken ? <Text className="text-sm text-muted">{dateLabel}</Text> : null}
               </Pressable>
 
               <Pressable
@@ -244,7 +257,11 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
                 <Ionicons
                   name="flag-outline"
                   size={22}
-                  color={hasPriorityToken || priority !== 'medium' ? PRIORITY_COLORS[priority] : '#808080'}
+                  color={
+                    hasPriorityToken || priority !== 'medium'
+                      ? PRIORITY_COLORS[priority]
+                      : theme.colors.textMuted
+                  }
                 />
                 {!hasPriorityToken && priority !== 'medium' ? (
                   <Text className="text-sm" style={{ color: PRIORITY_COLORS[priority] }}>
@@ -262,10 +279,10 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
                 <Ionicons
                   name="folder-outline"
                   size={22}
-                  color={hasProjectToken ? project.color : '#808080'}
+                  color={hasProjectToken ? project.color : theme.colors.textMuted}
                 />
                 {!hasProjectToken ? (
-                  <Text className="text-sm text-gray-500" numberOfLines={1}>
+                  <Text className="text-sm text-muted" numberOfLines={1}>
                     {project.name}
                   </Text>
                 ) : null}
@@ -287,16 +304,21 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
                         onPress={() => setDateQuick(choice.value)}
                         accessibilityRole="button"
                         accessibilityState={{ selected }}
-                        className="rounded-lg px-3 py-2"
+                        className="rounded-xl px-3 py-2"
                         style={{
-                          backgroundColor: selected ? `${COLORS.primary}15` : '#f5f5f5',
+                          backgroundColor: selected
+                            ? theme.colors.primarySoft
+                            : theme.colors.surfaceMuted,
                           borderWidth: selected ? 1 : 0,
-                          borderColor: COLORS.primary,
+                          borderColor: theme.colors.primary,
                         }}
                       >
                         <Text
                           className="text-sm"
-                          style={{ color: selected ? COLORS.primary : '#666', fontWeight: selected ? '600' : '400' }}
+                          style={{
+                            color: selected ? theme.colors.primary : theme.colors.textSecondary,
+                            fontWeight: selected ? '600' : '400',
+                          }}
                         >
                           {choice.label}
                         </Text>
@@ -322,9 +344,11 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
                       onPress={() => setManualPriority(value)}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
-                      className="flex-1 flex-row items-center justify-center gap-1.5 rounded-lg py-2.5"
+                      className="flex-1 flex-row items-center justify-center gap-1.5 rounded-xl py-2.5"
                       style={{
-                        backgroundColor: selected ? `${PRIORITY_COLORS[value]}15` : '#f5f5f5',
+                        backgroundColor: selected
+                          ? withAlpha(PRIORITY_COLORS[value], 0.14)
+                          : theme.colors.surfaceMuted,
                         borderWidth: selected ? 1 : 0,
                         borderColor: PRIORITY_COLORS[value],
                       }}
@@ -332,7 +356,10 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
                       <Ionicons name="flag" size={14} color={PRIORITY_COLORS[value]} />
                       <Text
                         className="text-sm"
-                        style={{ color: PRIORITY_COLORS[value], fontWeight: selected ? '600' : '400' }}
+                        style={{
+                          color: PRIORITY_COLORS[value],
+                          fontWeight: selected ? '600' : '400',
+                        }}
                       >
                         {PRIORITY_LABELS[value]}
                       </Text>
@@ -357,17 +384,25 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
                       onPress={() => setManualProjectId(item.id)}
                       accessibilityRole="button"
                       accessibilityState={{ selected }}
-                      className="flex-row items-center gap-2 rounded-lg px-3 py-2"
+                      className="flex-row items-center gap-2 rounded-xl px-3 py-2"
                       style={{
-                        backgroundColor: selected ? `${item.color}18` : '#f5f5f5',
+                        backgroundColor: selected
+                          ? withAlpha(item.color, 0.14)
+                          : theme.colors.surfaceMuted,
                         borderWidth: selected ? 1 : 0,
                         borderColor: item.color,
                       }}
                     >
-                      <View className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                      <View
+                        className="h-2.5 w-2.5 rounded-full"
+                        style={{ backgroundColor: item.color }}
+                      />
                       <Text
                         className="text-sm"
-                        style={{ color: selected ? item.color : '#666', fontWeight: selected ? '600' : '400' }}
+                        style={{
+                          color: selected ? item.color : theme.colors.textSecondary,
+                          fontWeight: selected ? '600' : '400',
+                        }}
                       >
                         {item.name}
                       </Text>
@@ -383,7 +418,7 @@ export default function QuickAdd({ visible, onClose }: QuickAddProps) {
               className="mt-5 items-center py-1"
               hitSlop={8}
             >
-              <Text className="text-sm text-gray-400">Plus d&apos;options</Text>
+              <Text className="text-sm text-faint">Plus d&apos;options</Text>
             </Pressable>
           </View>
         </KeyboardAvoidingView>

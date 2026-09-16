@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
 import { formatShortDate, formatTime } from '@/lib/date';
+import { theme } from '@/constants/theme';
 
 /**
  * Sur iOS le sélecteur s'affiche en ligne ; sur Android il doit être ouvert à
@@ -19,7 +21,7 @@ export default function DateTimeField({
 
   if (Platform.OS === 'ios') {
     return (
-      <View className="mb-4 flex-row items-center rounded-xl bg-gray-100 px-2 py-2">
+      <View className="mb-4 flex-row items-center rounded-2xl bg-surface-muted px-3 py-2">
         <DateTimePicker
           value={value}
           mode="datetime"
@@ -36,17 +38,19 @@ export default function DateTimeField({
         onPress={() => setMode('date')}
         accessibilityRole="button"
         accessibilityLabel="Choisir la date d'échéance"
-        className="h-12 flex-1 justify-center rounded-xl bg-gray-100 px-4"
+        className="h-12 flex-1 flex-row items-center rounded-2xl bg-surface-muted px-4 active:opacity-80"
       >
-        <Text className="text-gray-900">{formatShortDate(value)}</Text>
+        <Ionicons name="calendar-outline" size={16} color={theme.colors.icon} />
+        <Text className="ml-2 text-[15px] text-ink">{formatShortDate(value)}</Text>
       </Pressable>
       <Pressable
         onPress={() => setMode('time')}
         accessibilityRole="button"
         accessibilityLabel="Choisir l'heure d'échéance"
-        className="h-12 w-28 justify-center rounded-xl bg-gray-100 px-4"
+        className="h-12 w-32 flex-row items-center rounded-2xl bg-surface-muted px-4 active:opacity-80"
       >
-        <Text className="text-gray-900">{formatTime(value)}</Text>
+        <Ionicons name="time-outline" size={16} color={theme.colors.icon} />
+        <Text className="ml-2 text-[15px] text-ink">{formatTime(value)}</Text>
       </Pressable>
 
       {mode ? (
