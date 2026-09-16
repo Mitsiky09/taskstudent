@@ -1,13 +1,7 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text } from 'react-native';
 import { router } from 'expo-router';
+import TextField from '@/components/ui/TextField';
 import PrimaryButton from '@/components/PrimaryButton';
 import { useSession } from '@/context/SessionContext';
 
@@ -41,41 +35,43 @@ export default function Login() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      className="flex-1 bg-white"
+      className="flex-1 bg-canvas"
     >
-      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
-        <Text className="text-3xl font-bold text-gray-900">Bon retour 👋</Text>
-        <Text className="mb-8 mt-2 text-gray-500">
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20 }}>
+        <Text className="text-[28px] font-bold tracking-tight text-ink">Bon retour 👋</Text>
+        <Text className="mb-8 mt-2 text-sm text-muted">
           Ton profil reste sur cet appareil : aucune donnée n&apos;est envoyée à un serveur.
         </Text>
 
-        <TextInput
+        <TextField
+          label="Adresse e-mail"
+          variant="surface"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           autoComplete="email"
           keyboardType="email-address"
-          placeholder="Email"
+          placeholder="prenom@exemple.fr"
           accessibilityLabel="Adresse e-mail"
-          className="mb-3 h-12 rounded-xl bg-gray-100 px-4"
+          containerClassName="mb-3"
         />
-        <TextInput
+        <TextField
+          label="Mot de passe"
+          variant="surface"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          placeholder="Mot de passe"
+          placeholder="••••••"
           accessibilityLabel="Mot de passe"
-          className="h-12 rounded-xl bg-gray-100 px-4"
+          error={error}
         />
-
-        {error ? <Text className="mt-3 text-sm text-red-500">{error}</Text> : null}
 
         <PrimaryButton label="Se connecter" onPress={submit} className="mt-5" />
         <PrimaryButton label="Continuer en invité" onPress={continueAsGuest} variant="ghost" />
 
         <Pressable onPress={() => router.push('/auth/register')} accessibilityRole="button">
-          <Text className="mt-4 text-center text-gray-500">
-            Pas de compte ? <Text className="text-indigo-600">S&apos;inscrire</Text>
+          <Text className="mt-4 text-center text-sm text-muted">
+            Pas de compte ? <Text className="font-semibold text-primary">S&apos;inscrire</Text>
           </Text>
         </Pressable>
       </ScrollView>

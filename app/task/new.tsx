@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -10,24 +9,30 @@ import {
   View,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import DateTimeField from '@/components/DateTimeField';
-import { COLORS, FALLBACK_PROJECT } from '@/constants';
+import Sheet, { SheetAction, SheetOption } from '@/components/ui/Sheet';
+import { FALLBACK_PROJECT } from '@/constants';
+import { surfaceStyles, theme } from '@/constants/theme';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/hooks/useTasks';
 import { fromDateKey } from '@/lib/date';
-
-const ACCENT = COLORS.primary ?? '#4F46E5';
+import { createId } from '@/lib/id';
 
 type PickerType = 'category' | 'date' | null;
 
+/**
+ * Création de tâche en feuille modale (route `transparentModal`) : le même
+ * vocabulaire visuel que les autres feuilles de l'application.
+ */
 export default function NewTask() {
   const params = useLocalSearchParams<{ date?: string; subject?: string }>();
   const { createTask } = useTasks();
   const { settings } = useSettings();
+  const insets = useSafeAreaInsets();
 
-  const categories =
-    settings.categories.length > 0 ? settings.categories : [FALLBACK_PROJECT];
+  const categories = settings.categories.length > 0 ? settings.categories : [FALLBACK_PROJECT];
 
   const [title, setTitle] = useState('');
   const [due, setDue] = useState(() => {
@@ -37,10 +42,7 @@ export default function NewTask() {
     return d;
   });
   const [subjectId, setSubjectId] = useState(() => {
-    if (
-      typeof params.subject === 'string' &&
-      categories.some((c) => c.id === params.subject)
-    ) {
+    if (typeof params.subject === 'string' && categories.some((c) => c.id === params.subject)) {
       return params.subject;
     }
     return categories[0]?.id ?? FALLBACK_PROJECT.id;
@@ -50,8 +52,8 @@ export default function NewTask() {
   const [saving, setSaving] = useState(false);
   const [picker, setPicker] = useState<PickerType>(null);
 
-  const selectedCategory =
-    categories.find((c) => c.id === subjectId) ?? FALLBACK_PROJECT;
+  const selectedCategory = categories.find((c) => c.id === subjectId) ?? FALLBACK_PROJECT;
+  const canSave = title.trim().length > 0 && !saving;
 
   const handleClose = () => {
     if (router.canGoBack()) router.back();
@@ -64,16 +66,10 @@ export default function NewTask() {
     const tomorrowDate = new Date(now);
     tomorrowDate.setDate(now.getDate() + 1);
     const tomorrow = tomorrowDate.toDateString() === date.toDateString();
-    const time = date.toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     if (today) return `Auj. ${time}`;
     if (tomorrow) return `Demain ${time}`;
-    return (
-      date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) +
-      ` ${time}`
-    );
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ` ${time}`;
   };
 
   const addSubtask = () => {
@@ -101,10 +97,12 @@ export default function NewTask() {
         note: '',
         durationMinutes: null,
         repeat: 'none',
-        // si ton createTask accepte les sous-tâches à la création :
-        // sinon on les ajoute juste après — adapte selon ton hook
-        subtasks: subtasks.map((t) => ({ title: t })),
-      } as any);
+        subtasks: subtasks.map((title) => ({
+          id: createId('st'),
+          title,
+          isCompleted: false,
+        })),
+      });
       handleClose();
     } finally {
       setSaving(false);
@@ -112,16 +110,18 @@ export default function NewTask() {
   };
 
   return (
-    <View className="flex-1 justify-end bg-black/40">
+    <View className="flex-1 justify-end" style={{ backgroundColor: theme.colors.overlay }}>
       {/* Tap extérieur = fermer */}
-      <Pressable className="flex-1" onPress={handleClose} />
+      <Pressable className="flex-1" onPress={handleClose} accessibilityRole="button" />
 
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      >
-        <View className="rounded-t-3xl bg-white pb-6 pt-3">
-          {/* Poignée */}
-          <View className="mb-3 h-1 w-10 self-center rounded-full bg-slate-200" />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <View
+          className={`${surfaceStyles.sheet} pb-6 pt-3`}
+          style={{ paddingBottom: Math.max(insets.bottom, 24) }}
+        >
+          <View className="mb-3">
+            <View className={surfaceStyles.handle} />
+          </View>
 
           {/* TITRE — seul champ principal */}
           <View className="px-5">
@@ -130,10 +130,10 @@ export default function NewTask() {
               value={title}
               onChangeText={setTitle}
               placeholder="Nom de la tâche"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={theme.colors.placeholder}
               multiline
               maxLength={200}
-              className="text-lg font-semibold text-slate-900"
+              className="text-lg font-semibold text-ink"
               style={{ maxHeight: 88, paddingVertical: 4 }}
               onSubmitEditing={save}
               returnKeyType="done"
@@ -141,175 +141,120 @@ export default function NewTask() {
           </View>
 
           {/* Sous-tâches déjà ajoutées */}
-          {subtasks.length > 0 && (
+          {subtasks.length > 0 ? (
             <View className="mt-2 px-5">
               {subtasks.map((st, index) => (
-                <View
-                  key={`${st}-${index}`}
-                  className="mb-1.5 flex-row items-center"
-                >
-                  <Feather name="minus" size={14} color="#cbd5e1" />
-                  <Text
-                    className="ml-2 flex-1 text-[14px] text-slate-600"
-                    numberOfLines={1}
-                  >
+                <View key={`${st}-${index}`} className="mb-1.5 flex-row items-center">
+                  <Ionicons name="remove-outline" size={14} color={theme.colors.iconSoft} />
+                  <Text className="ml-2 flex-1 text-[14px] text-soft" numberOfLines={1}>
                     {st}
                   </Text>
-                  <Pressable
-                    onPress={() => removeSubtask(index)}
-                    hitSlop={8}
-                    className="p-1"
-                  >
-                    <Feather name="x" size={14} color="#94a3b8" />
+                  <Pressable onPress={() => removeSubtask(index)} hitSlop={8} className="p-1">
+                    <Ionicons name="close" size={14} color={theme.colors.icon} />
                   </Pressable>
                 </View>
               ))}
             </View>
-          )}
+          ) : null}
 
           {/* Ajout rapide sous-tâche */}
           <View className="mt-2 flex-row items-center px-5">
-            <Feather name="plus" size={16} color="#94a3b8" />
+            <Ionicons name="add" size={16} color={theme.colors.icon} />
             <TextInput
               value={subtaskDraft}
               onChangeText={setSubtaskDraft}
               placeholder="Sous-tâche"
-              placeholderTextColor="#cbd5e1"
-              className="ml-2 flex-1 text-[14px] text-slate-700"
+              placeholderTextColor={theme.colors.placeholder}
+              className="ml-2 flex-1 text-[14px] text-soft"
               onSubmitEditing={addSubtask}
               returnKeyType="done"
             />
-            {subtaskDraft.trim().length > 0 && (
+            {subtaskDraft.trim().length > 0 ? (
               <Pressable onPress={addSubtask} hitSlop={8} className="p-1">
-                <Feather name="check" size={16} color={ACCENT} />
+                <Ionicons name="checkmark" size={16} color={theme.colors.primary} />
               </Pressable>
-            )}
+            ) : null}
           </View>
 
           {/* BARRE DU BAS : Catégorie · Date · Envoyer */}
-          <View className="mt-4 flex-row items-center border-t border-slate-100 px-4 pt-3">
-            {/* Catégorie */}
+          <View className="mt-4 flex-row items-center border-t border-line-soft px-5 pt-3">
             <Pressable
               onPress={() => setPicker('category')}
-              className="mr-2 flex-row items-center rounded-full bg-slate-100 px-3 py-2 active:bg-slate-200"
+              className="mr-2 flex-row items-center rounded-full bg-surface-muted px-3 py-2 active:bg-line"
+              accessibilityRole="button"
+              accessibilityLabel="Choisir une catégorie"
             >
               <View
                 className="mr-1.5 h-2 w-2 rounded-full"
                 style={{ backgroundColor: selectedCategory.color }}
               />
-              <Text
-                className="max-w-[100px] text-[12px] font-semibold text-slate-700"
-                numberOfLines={1}
-              >
+              <Text className="max-w-[100px] text-[12px] font-semibold text-soft" numberOfLines={1}>
                 {selectedCategory.name}
               </Text>
             </Pressable>
 
-            {/* Date */}
             <Pressable
               onPress={() => setPicker('date')}
-              className="mr-2 flex-row items-center rounded-full bg-slate-100 px-3 py-2 active:bg-slate-200"
+              className="mr-2 flex-row items-center rounded-full bg-surface-muted px-3 py-2 active:bg-line"
+              accessibilityRole="button"
+              accessibilityLabel="Choisir la date d'échéance"
             >
-              <Feather name="calendar" size={12} color="#64748b" />
-              <Text className="ml-1.5 text-[12px] font-semibold text-slate-700">
-                {formatDate(due)}
-              </Text>
+              <Ionicons name="calendar-outline" size={12} color={theme.colors.icon} />
+              <Text className="ml-1.5 text-[12px] font-semibold text-soft">{formatDate(due)}</Text>
             </Pressable>
 
             <View className="flex-1" />
 
-            {/* Bouton envoyer */}
             <Pressable
               onPress={save}
-              disabled={!title.trim() || saving}
+              disabled={!canSave}
+              accessibilityRole="button"
+              accessibilityLabel="Ajouter la tâche"
+              className="h-10 w-10 items-center justify-center rounded-full active:opacity-90"
               style={{
-                width: 40,
-                height: 40,
-                borderRadius: 20,
-                backgroundColor: title.trim() ? ACCENT : '#e2e8f0',
-                alignItems: 'center',
-                justifyContent: 'center',
+                backgroundColor: canSave ? theme.colors.primary : theme.colors.surfaceMuted,
               }}
             >
-              <Feather
+              <Ionicons
                 name="arrow-up"
                 size={18}
-                color={title.trim() ? '#fff' : '#94a3b8'}
+                color={canSave ? theme.colors.onPrimary : theme.colors.placeholder}
               />
             </Pressable>
           </View>
         </View>
       </KeyboardAvoidingView>
 
-      {/* Picker catégorie / date */}
-      <Modal
+      {/* Sélecteurs catégorie / date */}
+      <Sheet
         visible={picker !== null}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setPicker(null)}
+        onClose={() => setPicker(null)}
+        title={picker === 'date' ? 'Date et heure' : 'Catégorie'}
       >
-        <Pressable
-          className="flex-1 justify-end bg-black/30"
-          onPress={() => setPicker(null)}
-        >
-          <Pressable
-            className="rounded-t-3xl bg-white px-5 pb-10 pt-3"
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View className="mb-4 h-1 w-10 self-center rounded-full bg-slate-200" />
+        {picker === 'category' ? (
+          <ScrollView style={{ maxHeight: 280 }}>
+            {categories.map((cat) => (
+              <SheetOption
+                key={cat.id}
+                label={cat.name}
+                color={cat.color}
+                selected={subjectId === cat.id}
+                onPress={() => {
+                  setSubjectId(cat.id);
+                  setPicker(null);
+                }}
+              />
+            ))}
+          </ScrollView>
+        ) : null}
 
-            {picker === 'category' && (
-              <View>
-                <Text className="mb-3 text-base font-bold text-slate-900">
-                  Catégorie
-                </Text>
-                <ScrollView style={{ maxHeight: 280 }}>
-                  {categories.map((cat) => {
-                    const selected = subjectId === cat.id;
-                    return (
-                      <Pressable
-                        key={cat.id}
-                        onPress={() => {
-                          setSubjectId(cat.id);
-                          setPicker(null);
-                        }}
-                        className="flex-row items-center border-b border-slate-50 py-3.5"
-                      >
-                        <View
-                          className="mr-3 h-3 w-3 rounded-full"
-                          style={{ backgroundColor: cat.color }}
-                        />
-                        <Text className="flex-1 text-[15px] font-medium text-slate-800">
-                          {cat.name}
-                        </Text>
-                        {selected && (
-                          <Feather name="check" size={18} color={ACCENT} />
-                        )}
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-              </View>
-            )}
-
-            {picker === 'date' && (
-              <View>
-                <Text className="mb-3 text-base font-bold text-slate-900">
-                  Date et heure
-                </Text>
-                <DateTimeField value={due} onChange={setDue} />
-                <Pressable
-                  onPress={() => setPicker(null)}
-                  className="mt-4 items-center rounded-xl py-3"
-                  style={{ backgroundColor: ACCENT }}
-                >
-                  <Text className="font-bold text-white">OK</Text>
-                </Pressable>
-              </View>
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
+        {picker === 'date' ? (
+          <>
+            <DateTimeField value={due} onChange={setDue} />
+            <SheetAction label="Valider" onPress={() => setPicker(null)} />
+          </>
+        ) : null}
+      </Sheet>
     </View>
   );
 }

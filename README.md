@@ -56,15 +56,16 @@ Puis scanner le QR code avec Expo Go, ou lancer `npm run android` / `npm run ios
 
 ```
 app/              Routes (Expo Router, navigation par fichiers)
-  (tabs)/         Accueil, Tâches, Calendrier, Archives, Profil
+  (tabs)/         Accueil, Aujourd'hui, Agenda, Profil (+ Tâches, Archives)
   auth/           Connexion et inscription locales
   onboarding/     Trois écrans d'introduction
   task/           Création et détail d'une tâche
 components/       Composants d'interface réutilisables
+  ui/             Primitives du design system (Screen, Card, Sheet, Chip…)
 context/          Contextes React : tâches, session, préférences
 hooks/            Accès typés aux contextes et vues dérivées
 lib/              Logique métier pure et adaptateurs techniques
-constants/        Matières, clés de stockage, palette
+constants/        Design system (theme.ts), catégories, clés de stockage
 types/            Types métier partagés
 __tests__/        Tests unitaires de la logique métier
 ```
@@ -88,7 +89,12 @@ ou Zustand aurait ajouté une dépendance sans bénéfice mesurable ici.
 tâches sont sérialisées en JSON, les dates en ISO 8601.
 
 **NativeWind** pour styliser avec les classes utilitaires Tailwind, ce qui évite
-la dispersion des `StyleSheet.create` et garde la charte cohérente.
+la dispersion des `StyleSheet.create`. Le design system est décrit dans
+[`docs/DESIGN_SYSTEM.md`](docs/DESIGN_SYSTEM.md) : une palette et des tokens
+sémantiques définis une seule fois dans `constants/theme.ts`, réexposés en
+classes par `tailwind.config.js`, et des primitives partagées dans
+`components/ui/` (écrans, cartes, feuilles modales, pastilles, champs de
+saisie). Aucune couleur n'est écrite en dur dans un écran.
 
 ### Décisions notables
 
@@ -116,7 +122,7 @@ la dispersion des `StyleSheet.create` et garde la charte cohérente.
 npm test
 ```
 
-38 tests unitaires couvrent les filtres, les tris, la recherche, le calcul des
+73 tests unitaires couvrent les filtres, les tris, la recherche, le calcul des
 statistiques, l'archivage automatique, la migration des données et l'export
 CSV/JSON, dont un test de régression sur le décalage de fuseau horaire.
 
@@ -128,9 +134,9 @@ rendu n'est nécessaire.
 
 - Pas de synchronisation multi-appareils ni de compte distant : l'ajout d'une API
   et d'une file de synchronisation est la suite logique.
-- Les matières sont figées dans `constants/index.ts` ; leur gestion par
-  l'utilisateur (création, renommage, couleur) est préparée par la normalisation
-  du modèle mais non implémentée.
+- Les catégories par défaut sont définies dans `constants/index.ts` ;
+  l'utilisateur peut en créer et en supprimer depuis son profil, mais pas encore
+  renommer ni recolorer une catégorie existante.
 - Thème sombre non pris en charge ; l'application est forcée en thème clair.
 - Les rappels sont reprogrammés à la création de la tâche uniquement : modifier
   l'échéance d'une tâche existante ne décale pas encore la notification.

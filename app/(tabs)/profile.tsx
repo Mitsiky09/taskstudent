@@ -1,9 +1,13 @@
 import { ReactNode, useState } from 'react';
-import { Alert, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import Card from '@/components/ui/Card';
+import TextField from '@/components/ui/TextField';
 import Header from '@/components/Header';
-import { AUTO_ARCHIVE_DAYS, CATEGORY_COLORS, COLORS } from '@/constants';
+import { AUTO_ARCHIVE_DAYS, CATEGORY_COLORS } from '@/constants';
+import { theme, withAlpha } from '@/constants/theme';
 import { useSession } from '@/context/SessionContext';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/hooks/useTasks';
@@ -12,23 +16,31 @@ import { requestPermission } from '@/lib/notifications';
 import { resetOnboarding } from '@/lib/onboarding';
 import { archivedTasks } from '@/lib/tasks';
 
+/** Ligne de réglage : même hauteur, même séparateur et même chevron partout. */
 function Row({
   title,
   right,
   onPress,
+  tone = 'default',
 }: {
   title: string;
   right?: ReactNode;
   onPress?: () => void;
+  tone?: 'default' | 'danger';
 }) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole={onPress ? 'button' : undefined}
-      className="flex-row items-center border-b border-gray-100 py-4"
+      className="flex-row items-center border-b border-line-soft py-4 active:opacity-70"
     >
-      <Text className="flex-1 text-base text-gray-900">{title}</Text>
-      {right ?? (onPress ? <Text className="text-gray-400">›</Text> : null)}
+      <Text
+        className={`flex-1 text-base ${tone === 'danger' ? 'font-semibold text-danger' : 'text-ink'}`}
+      >
+        {title}
+      </Text>
+      {right ??
+        (onPress ? <Ionicons name="chevron-forward" size={18} color={theme.colors.icon} /> : null)}
     </Pressable>
   );
 }
@@ -46,9 +58,7 @@ export default function Profile() {
   const addCategory = () => {
     const name = newCategory.trim();
     if (!name) return;
-    const exists = categories.some(
-      (c) => c.name.trim().toLowerCase() === name.toLowerCase()
-    );
+    const exists = categories.some((c) => c.name.trim().toLowerCase() === name.toLowerCase());
     if (exists) {
       Alert.alert('Déjà existante', 'Une catégorie porte déjà ce nom.');
       return;
@@ -119,33 +129,34 @@ export default function Profile() {
     ]);
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-[#fafafa]">
-      <ScrollView className="px-4" contentContainerStyle={{ paddingBottom: 40 }}>
+    <SafeAreaView edges={['top']} className="flex-1 bg-canvas">
+      <ScrollView className="px-5" contentContainerStyle={{ paddingBottom: 120 }}>
         <Header title="Profil" />
 
         <View className="items-center">
-          <View
-            className="h-20 w-20 items-center justify-center rounded-full"
-            style={{ backgroundColor: `${COLORS.primary}18` }}
-          >
-            <Text className="text-3xl font-bold" style={{ color: COLORS.primary }}>
+          <View className="h-20 w-20 items-center justify-center rounded-full bg-primary-50">
+            <Text className="text-3xl font-bold text-primary">
               {user?.name?.[0]?.toUpperCase() ?? '?'}
             </Text>
           </View>
-          <Text className="mt-3 text-2xl font-bold text-gray-900">{user?.name ?? 'Invité'}</Text>
-          <Text className="text-gray-500">{user?.email ?? 'Session locale'}</Text>
-          {user?.isGuest ? <Text className="mt-1 text-xs text-gray-400">Mode invité</Text> : null}
+          <Text className="mt-3 text-2xl font-bold tracking-tight text-ink">
+            {user?.name ?? 'Invité'}
+          </Text>
+          <Text className="text-sm text-muted">{user?.email ?? 'Session locale'}</Text>
+          {user?.isGuest ? <Text className="mt-1 text-xs text-faint">Mode invité</Text> : null}
         </View>
 
-        <View className="mt-7 rounded-2xl bg-white px-4">
-          <Text className="pt-4 text-sm font-bold uppercase text-gray-400">Préférences</Text>
+        <Card padded={false} className="mt-7 px-5">
+          <Text className="pt-5 text-xs font-semibold uppercase tracking-wider text-faint">
+            Préférences
+          </Text>
           <Row
             title="Rappels avant échéance"
             right={
               <Switch
                 value={settings.notifications}
                 onValueChange={toggleNotifications}
-                trackColor={{ true: COLORS.primary }}
+                trackColor={{ true: theme.colors.primary }}
                 accessibilityLabel="Activer les rappels"
               />
             }
@@ -156,15 +167,17 @@ export default function Profile() {
               <Switch
                 value={settings.autoArchive}
                 onValueChange={(value) => updateSetting('autoArchive', value)}
-                trackColor={{ true: COLORS.primary }}
+                trackColor={{ true: theme.colors.primary }}
                 accessibilityLabel="Activer l'archivage automatique"
               />
             }
           />
-        </View>
+        </Card>
 
-        <View className="mt-7 rounded-2xl bg-white px-4 py-4">
-          <Text className="text-sm font-bold uppercase text-gray-400">Mes catégories</Text>
+        <Card className="mt-5">
+          <Text className="text-xs font-semibold uppercase tracking-wider text-faint">
+            Mes catégories
+          </Text>
 
           <View className="mt-3 flex-row flex-wrap gap-2">
             {categories.map((category) => (
@@ -174,57 +187,60 @@ export default function Profile() {
                 accessibilityRole="button"
                 accessibilityLabel={`Supprimer la catégorie ${category.name}`}
                 className="flex-row items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3"
-                style={{ backgroundColor: `${category.color}15` }}
+                style={{ backgroundColor: withAlpha(category.color, 0.14) }}
               >
-                <View className="h-3 w-3 rounded-full" style={{ backgroundColor: category.color }} />
-                <Text className="text-sm font-medium" style={{ color: category.color }}>
+                <View
+                  className="h-3 w-3 rounded-full"
+                  style={{ backgroundColor: category.color }}
+                />
+                <Text className="text-sm font-semibold" style={{ color: category.color }}>
                   {category.name}
                 </Text>
               </Pressable>
             ))}
           </View>
-          <Text className="mt-2 text-xs text-gray-400">
+          <Text className="mt-2 text-xs text-faint">
             Touche longuement une catégorie pour la supprimer.
           </Text>
 
+          <View className="mt-3 flex-row flex-wrap gap-2 rounded-2xl bg-surface-muted p-3">
+            {CATEGORY_COLORS.map((color) => (
+              <Pressable
+                key={color}
+                onPress={() => setNewColor(color)}
+                accessibilityRole="button"
+                accessibilityLabel={`Couleur ${color}`}
+                className="h-6 w-6 items-center justify-center rounded-full"
+                style={{ backgroundColor: color }}
+              >
+                {newColor === color ? (
+                  <Ionicons name="checkmark" size={14} color={theme.colors.onPrimary} />
+                ) : null}
+              </Pressable>
+            ))}
+          </View>
+
           <View className="mt-3 flex-row gap-2">
-            <View className="flex-1 flex-row items-center gap-2 rounded-xl bg-gray-100 px-3">
-              {CATEGORY_COLORS.map((color) => (
-                <Pressable
-                  key={color}
-                  onPress={() => setNewColor(color)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Couleur ${color}`}
-                  className="h-6 w-6 items-center justify-center rounded-full"
-                  style={{ backgroundColor: color }}
-                >
-                  {newColor === color ? (
-                    <Text className="text-xs leading-none text-white">✓</Text>
-                  ) : null}
-                </Pressable>
-              ))}
-            </View>
+            <TextField
+              value={newCategory}
+              onChangeText={setNewCategory}
+              onSubmitEditing={addCategory}
+              placeholder="Nouvelle catégorie…"
+              accessibilityLabel="Nom de la nouvelle catégorie"
+              containerClassName="flex-1"
+            />
             <Pressable
               onPress={addCategory}
               accessibilityRole="button"
               accessibilityLabel="Ajouter la catégorie"
-              className="justify-center rounded-xl px-4"
-              style={{ backgroundColor: COLORS.primary }}
+              className="justify-center rounded-2xl bg-primary px-4 active:opacity-90"
             >
               <Text className="font-semibold text-white">Ajouter</Text>
             </Pressable>
           </View>
-          <TextInput
-            value={newCategory}
-            onChangeText={setNewCategory}
-            onSubmitEditing={addCategory}
-            placeholder="Nouvelle catégorie…"
-            accessibilityLabel="Nom de la nouvelle catégorie"
-            className="mt-3 h-11 rounded-xl bg-gray-100 px-4"
-          />
-        </View>
+        </Card>
 
-        <View className="mt-4 rounded-2xl bg-white px-4">
+        <Card padded={false} className="mt-5 px-5">
           <Row title="Statistiques" onPress={() => router.push('/stats')} />
           <Row
             title={`Archives (${archives.length})`}
@@ -238,14 +254,10 @@ export default function Profile() {
               router.replace('/onboarding/1');
             }}
           />
-          <Row
-            title="Déconnexion"
-            right={<Text className="font-semibold text-red-500">Se déconnecter</Text>}
-            onPress={confirmSignOut}
-          />
-        </View>
+          <Row title="Déconnexion" onPress={confirmSignOut} tone="danger" />
+        </Card>
 
-        <Text className="mt-6 text-center text-xs text-gray-400">
+        <Text className="mt-6 text-center text-xs text-faint">
           TaskStudent 1.0.0 · données stockées uniquement sur cet appareil
         </Text>
       </ScrollView>

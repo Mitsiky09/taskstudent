@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, Text } from 'react-native';
 import { router } from 'expo-router';
+import TextField from '@/components/ui/TextField';
 import Header from '@/components/Header';
 import PrimaryButton from '@/components/PrimaryButton';
 import { useSession } from '@/context/SessionContext';
@@ -35,39 +36,43 @@ export default function Register() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      className="flex-1 bg-white"
+      className="flex-1 bg-canvas"
     >
-      <ScrollView contentContainerStyle={{ padding: 24 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ padding: 20 }} keyboardShouldPersistTaps="handled">
         <Header title="Créer un compte" showBack />
 
-        <TextInput
+        <TextField
+          label="Prénom"
+          variant="surface"
           value={name}
           onChangeText={setName}
-          placeholder="Prénom"
+          placeholder="Camille"
           accessibilityLabel="Prénom"
-          className="mb-3 h-12 rounded-xl bg-gray-100 px-4"
+          containerClassName="mb-3"
         />
-        <TextInput
+        <TextField
+          label="Adresse e-mail"
+          variant="surface"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
-          placeholder="Email"
+          placeholder="prenom@exemple.fr"
           accessibilityLabel="Adresse e-mail"
-          className="mb-3 h-12 rounded-xl bg-gray-100 px-4"
+          containerClassName="mb-3"
         />
-        <TextInput
+        <TextField
+          label="Mot de passe"
+          variant="surface"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          placeholder="Mot de passe (6 caractères minimum)"
+          placeholder="6 caractères minimum"
           accessibilityLabel="Mot de passe"
-          className="h-12 rounded-xl bg-gray-100 px-4"
+          error={error}
         />
 
-        {error ? <Text className="mt-3 text-sm text-red-500">{error}</Text> : null}
-
-        <Text className="mb-5 mt-4 text-xs leading-5 text-gray-500">
+        <Text className="mb-5 mt-4 text-xs leading-5 text-muted">
           Le compte est créé localement sur cet appareil. Le mot de passe sert uniquement à valider
           le formulaire : il n&apos;est ni transmis, ni conservé.
         </Text>

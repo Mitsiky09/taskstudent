@@ -1,13 +1,15 @@
 import { Alert, Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, getCategory } from '@/constants';
+import Card from '@/components/ui/Card';
+import PriorityDot from './PriorityDot';
+import SubjectTag from './SubjectTag';
+import { getCategory } from '@/constants';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/hooks/useTasks';
 import { addDays, formatShortDate, formatTime } from '@/lib/date';
 import { isOverdue, isReported } from '@/lib/tasks';
+import { theme } from '@/constants/theme';
 import { Task } from '@/types';
-import PriorityDot from './PriorityDot';
-import SubjectTag from './SubjectTag';
 
 interface TaskCardProps {
   task: Task;
@@ -16,6 +18,10 @@ interface TaskCardProps {
   readOnly?: boolean;
 }
 
+/**
+ * Carte de tâche : le même rendu dans toutes les listes (Accueil, Aujourd'hui,
+ * Calendrier, Tâches). Les couleurs d'état viennent des tokens sémantiques.
+ */
 export default function TaskCard({ task, onPress, onToggle, readOnly = false }: TaskCardProps) {
   const { settings } = useSettings();
   const { reportTask } = useTasks();
@@ -36,11 +42,11 @@ export default function TaskCard({ task, onPress, onToggle, readOnly = false }: 
   };
 
   return (
-    <Pressable
+    <Card
+      variant="card"
       onPress={onPress}
-      accessibilityRole="button"
       accessibilityLabel={`Tâche ${task.title}`}
-      className="mb-3 flex-row rounded-2xl bg-white p-4 shadow-sm"
+      className="mb-2.5 flex-row"
     >
       {readOnly ? null : (
         <Pressable
@@ -49,12 +55,13 @@ export default function TaskCard({ task, onPress, onToggle, readOnly = false }: 
           accessibilityRole="checkbox"
           accessibilityState={{ checked: completed }}
           accessibilityLabel={completed ? 'Marquer comme à faire' : 'Marquer comme terminée'}
-          className={`mr-3 mt-1 h-6 w-6 items-center justify-center rounded-full border-2 ${
-            completed ? '' : 'border-gray-300'
+          className={`mr-3 mt-0.5 h-6 w-6 items-center justify-center rounded-full border-2 ${
+            completed ? 'border-primary bg-primary' : 'border-line'
           }`}
-          style={completed ? { borderColor: COLORS.primary, backgroundColor: COLORS.primary } : undefined}
         >
-          <Text className="text-xs text-white">{completed ? '✓' : ''}</Text>
+          {completed ? (
+            <Ionicons name="checkmark" size={14} color={theme.colors.onPrimary} />
+          ) : null}
         </Pressable>
       )}
 
@@ -62,8 +69,8 @@ export default function TaskCard({ task, onPress, onToggle, readOnly = false }: 
         <View className="flex-row items-center">
           <Text
             numberOfLines={1}
-            className={`flex-1 text-base font-semibold ${
-              completed ? 'text-gray-400 line-through' : 'text-gray-900'
+            className={`flex-1 text-[15px] font-semibold ${
+              completed ? 'text-faint line-through' : 'text-ink'
             }`}
           >
             {task.title}
@@ -72,18 +79,21 @@ export default function TaskCard({ task, onPress, onToggle, readOnly = false }: 
         </View>
 
         <View className="mb-2 mt-1 flex-row items-center">
-          <Text className={`text-sm ${late ? 'font-semibold text-red-500' : 'text-gray-500'}`}>
+          <Text
+            className={`text-[13px] ${late ? 'font-semibold text-danger' : 'text-muted'}`}
+            numberOfLines={1}
+          >
             {formatShortDate(due)} · {formatTime(due)}
             {task.durationMinutes ? ` · ${task.durationMinutes} min` : ''}
           </Text>
           {late ? (
-            <View className="ml-2 rounded-full bg-red-50 px-2 py-0.5">
-              <Text className="text-xs font-semibold text-red-500">En retard</Text>
+            <View className="ml-2 rounded-full bg-danger-50 px-2 py-0.5">
+              <Text className="text-[11px] font-bold text-danger-600">En retard</Text>
             </View>
           ) : null}
           {reported && !late ? (
-            <View className="ml-2 rounded-full bg-amber-50 px-2 py-0.5">
-              <Text className="text-xs font-semibold text-amber-600">Reporté</Text>
+            <View className="ml-2 rounded-full bg-warning-50 px-2 py-0.5">
+              <Text className="text-[11px] font-bold text-warning-600">Reporté</Text>
             </View>
           ) : null}
           {readOnly ? null : (
@@ -92,9 +102,9 @@ export default function TaskCard({ task, onPress, onToggle, readOnly = false }: 
               hitSlop={6}
               accessibilityRole="button"
               accessibilityLabel="Reporter cette tâche"
-              className="ml-auto pl-2"
+              className="ml-auto pl-2 active:opacity-70"
             >
-              <Ionicons name="calendar-outline" size={15} color="#94a3b8" />
+              <Ionicons name="calendar-outline" size={15} color={theme.colors.icon} />
             </Pressable>
           )}
         </View>
@@ -102,15 +112,20 @@ export default function TaskCard({ task, onPress, onToggle, readOnly = false }: 
         <View className="flex-row items-center">
           <SubjectTag category={category} />
           {task.subtasks.length > 0 ? (
-            <Text className="ml-2 text-xs text-gray-400">
+            <Text className="ml-2 text-xs text-faint">
               {doneSubtasks}/{task.subtasks.length} sous-tâches
             </Text>
           ) : null}
           {task.repeat !== 'none' ? (
-            <Ionicons name="repeat-outline" size={14} color="#94a3b8" style={{ marginLeft: 6 }} />
+            <Ionicons
+              name="repeat-outline"
+              size={14}
+              color={theme.colors.icon}
+              style={{ marginLeft: 6 }}
+            />
           ) : null}
         </View>
       </View>
-    </Pressable>
+    </Card>
   );
 }

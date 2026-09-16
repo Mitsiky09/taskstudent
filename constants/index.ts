@@ -1,11 +1,16 @@
 import { RepeatRule, Settings, Subject } from '@/types';
+import { theme } from './theme';
 
-/** Projets façon Todoist (remplace l'ancien modèle « matières scolaires »). */
+/**
+ * Projets façon Todoist (remplace l'ancien modèle « matières scolaires »).
+ * Les couleurs viennent de la palette du design system : une catégorie par
+ * défaut ne doit pas introduire une teinte hors système.
+ */
 export const PROJECTS: Subject[] = [
-  { id: 'inbox', name: 'Boîte de réception', color: '#808080' },
-  { id: 'work', name: 'Travail', color: '#4073ff' },
-  { id: 'personal', name: 'Personnel', color: '#25cad3' },
-  { id: 'shopping', name: 'Courses', color: '#ff9933' },
+  { id: 'inbox', name: 'Boîte de réception', color: theme.colors.textMuted },
+  { id: 'work', name: 'Travail', color: theme.colors.primary },
+  { id: 'personal', name: 'Personnel', color: theme.colors.info },
+  { id: 'shopping', name: 'Courses', color: theme.colors.warning },
 ];
 
 /** @deprecated Alias conservé pour compatibilité interne. */
@@ -14,7 +19,7 @@ export const SUBJECTS = PROJECTS;
 export const FALLBACK_PROJECT: Subject = {
   id: 'inbox',
   name: 'Boîte de réception',
-  color: '#808080',
+  color: theme.colors.textMuted,
 };
 
 /** @deprecated */
@@ -39,15 +44,15 @@ export function getProject(projectId: string): Subject {
 }
 
 /** Palette proposée pour les nouvelles catégories. */
-export const CATEGORY_COLORS = [
-  '#d1453b',
-  '#246fe0',
-  '#25cad3',
-  '#ff9933',
-  '#4f46e5',
-  '#ec4899',
-  '#22c55e',
+export const CATEGORY_COLORS: string[] = [
+  theme.colors.primary,
+  theme.colors.info,
+  theme.colors.success,
+  theme.colors.warning,
+  theme.colors.danger,
   '#a855f7',
+  '#14b8a6',
+  theme.colors.textSecondary,
 ];
 
 /** Résout une catégorie (définie dans les réglages) par son identifiant. */
@@ -66,11 +71,23 @@ export const PRIORITY_LABELS: Record<string, string> = {
   high: 'P1',
 };
 
+/** Priorités alignées sur les couleurs sémantiques du design system. */
 export const PRIORITY_COLORS: Record<string, string> = {
-  low: '#808080',
-  medium: '#246fe0',
-  high: '#d1453b',
+  low: theme.colors.textMuted,
+  medium: theme.colors.primary,
+  high: theme.colors.danger,
 };
+
+/**
+ * États d'une tâche, utilisés par les graphiques et les pastilles :
+ * à faire (marque), reportée (avertissement), terminée (succès), en retard.
+ */
+export const STATUS_COLORS = {
+  todo: theme.colors.primary,
+  reported: theme.colors.warning,
+  done: theme.colors.success,
+  overdue: theme.colors.danger,
+} as const;
 
 /** Durées rapides proposées lors de la création/édition (en minutes). */
 export const DURATION_OPTIONS: number[] = [15, 30, 45, 60, 90, 120];
@@ -98,8 +115,3 @@ export const DEFAULT_SETTINGS: Settings = {
 
 /** Délai avant archivage automatique d'une tâche terminée, en jours. */
 export const AUTO_ARCHIVE_DAYS = 7;
-
-export const COLORS = {
-  primary: '#db4c3f',
-  background: '#fafafa',
-} as const;

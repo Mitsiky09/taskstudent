@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Tabs, router } from 'expo-router'; // 👈 Importe "router" ici
 import { Ionicons } from '@expo/vector-icons';
+import { shadows, theme, withAlpha } from '@/constants/theme';
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -20,10 +21,16 @@ const VISIBLE_TABS: TabConfig[] = [
   { name: 'profile', label: 'Profil', activeIcon: 'person', inactiveIcon: 'person-outline' },
 ];
 
-const PRIMARY_COLOR = '#4F46E5';
-const ACTIVE_BG_TINT = '#EEF2FF';
-const ORANGE_ACCENT = '#5f58ea';
-const INACTIVE_COLOR = '#94A3B8';
+/**
+ * Couleurs de la barre d'onglets, reprises des tokens du design system.
+ * La structure et les animations de cette barre sont figées : seule la
+ * palette est centralisée ici (l'ancien `#5f58ea` du bouton « + » est
+ * désormais exactement la couleur de marque).
+ */
+const PRIMARY_COLOR = theme.colors.primary;
+const ACTIVE_BG_TINT = theme.colors.primarySoft;
+const FAB_COLOR = theme.colors.primary;
+const INACTIVE_COLOR = theme.colors.textMuted;
 
 type TabBarProps = ComponentProps<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>;
 
@@ -36,10 +43,7 @@ function FloatingTabBar({ state, descriptors, navigation }: TabBarProps) {
       style={[styles.wrapper, { bottom: Math.max(insets.bottom, 16) }]}
     >
       {/* Barre d'onglets principale */}
-      <View
-        style={styles.capsule}
-        onStartShouldSetResponder={() => true}
-      >
+      <View style={styles.capsule} onStartShouldSetResponder={() => true}>
         {VISIBLE_TABS.map((tab) => {
           const route = state.routes.find((r) => r.name === tab.name);
           if (!route) return null;
@@ -71,7 +75,7 @@ function FloatingTabBar({ state, descriptors, navigation }: TabBarProps) {
               style={({ pressed }) => [
                 styles.tabButton,
                 isFocused && styles.tabButtonActive,
-                pressed && { transform: [{ scale: 0.90 }] },
+                pressed && { transform: [{ scale: 0.9 }] },
               ]}
             >
               <Ionicons
@@ -86,10 +90,7 @@ function FloatingTabBar({ state, descriptors, navigation }: TabBarProps) {
       </View>
 
       {/* Bouton "+" qui ouvre le Bottom Sheet Todoist */}
-      <View
-        style={styles.fabContainer}
-        onStartShouldSetResponder={() => true}
-      >
+      <View style={styles.fabContainer} onStartShouldSetResponder={() => true}>
         <Pressable
           onPress={() => router.push('/task/new')} // 👈 Redirige vers notre superbe écran de création !
           accessibilityRole="button"
@@ -99,7 +100,7 @@ function FloatingTabBar({ state, descriptors, navigation }: TabBarProps) {
             pressed && { transform: [{ scale: 0.92 }], opacity: 0.85 },
           ]}
         >
-          <Ionicons name="add" size={36} color="#FFFFFF" style={styles.iconCenter} />
+          <Ionicons name="add" size={36} color={theme.colors.onPrimary} style={styles.iconCenter} />
         </Pressable>
       </View>
     </View>
@@ -122,18 +123,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: 10,
     paddingVertical: 20,
     marginRight: 12,
     borderRadius: 40,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 6,
+    borderColor: withAlpha(theme.colors.border, 0.8),
+    ...shadows.raised,
   },
   tabButton: {
     padding: 8,
@@ -146,21 +143,17 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: ORANGE_ACCENT,
+    backgroundColor: FAB_COLOR,
     flexShrink: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: ORANGE_ACCENT,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 10,
-    elevation: 8,
+    ...shadows.floating,
   },
   fabPressable: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: ORANGE_ACCENT,
+    backgroundColor: FAB_COLOR,
     alignItems: 'center',
     justifyContent: 'center',
   },

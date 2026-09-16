@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { FlatList, Pressable, Text } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import Screen from '@/components/ui/Screen';
+import TextField from '@/components/ui/TextField';
 import EmptyState from '@/components/EmptyState';
 import FilterBar from '@/components/FilterBar';
 import Header from '@/components/Header';
@@ -45,46 +46,48 @@ export default function Tasks() {
   const shown = useMemo(() => {
     const now = new Date();
     const filtered = filterTasks(visibleTasks(tasks), filter, now);
-    const searched = searchTasks(filtered, query, (t) =>
-      getCategory(settings.categories, t.subjectId).name
+    const searched = searchTasks(
+      filtered,
+      query,
+      (t) => getCategory(settings.categories, t.subjectId).name
     );
     return sortTasks(searched, sort);
   }, [tasks, filter, sort, query, settings.categories]);
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-slate-50">
-      <View className="px-4">
-        <Header
-          title={filter === 'all' ? 'Toutes les tâches' : FILTER_LABELS[filter]}
-          right={
-            <Pressable
-              onPress={() => setSort((current) => (current === 'date' ? 'priority' : 'date'))}
-              accessibilityRole="button"
-              accessibilityLabel="Changer le tri"
-              hitSlop={8}
-            >
-              <Text className="text-indigo-600">
-                Tri : {sort === 'date' ? 'échéance' : 'priorité'}
-              </Text>
-            </Pressable>
-          }
-        />
+    <Screen>
+      <Header
+        title={filter === 'all' ? 'Toutes les tâches' : FILTER_LABELS[filter]}
+        right={
+          <Pressable
+            onPress={() => setSort((current) => (current === 'date' ? 'priority' : 'date'))}
+            accessibilityRole="button"
+            accessibilityLabel="Changer le tri"
+            hitSlop={8}
+          >
+            <Text className="text-sm font-semibold text-primary">
+              Tri : {sort === 'date' ? 'échéance' : 'priorité'}
+            </Text>
+          </Pressable>
+        }
+      />
 
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Rechercher une tâche…"
-          accessibilityLabel="Rechercher une tâche"
-          className="mb-4 h-12 rounded-xl bg-white px-4"
-        />
+      <TextField
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Rechercher une tâche…"
+        accessibilityLabel="Rechercher une tâche"
+        variant="surface"
+        containerClassName="mb-4"
+      />
 
-        <FilterBar items={FILTERS} value={filter} onChange={changeFilter} />
-      </View>
+      <FilterBar items={FILTERS} value={filter} onChange={changeFilter} />
 
       <FlatList
+        className="flex-1"
         data={shown}
         keyExtractor={(task) => task.id}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 150 }}
+        contentContainerStyle={{ paddingBottom: 150 }}
         renderItem={({ item }) => (
           <TaskCard
             task={item}
@@ -99,7 +102,6 @@ export default function Tasks() {
           />
         }
       />
-
-    </SafeAreaView>
+    </Screen>
   );
 }

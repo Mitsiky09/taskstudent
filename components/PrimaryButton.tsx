@@ -1,34 +1,45 @@
-import { Pressable, Text } from 'react-native';
-import { COLORS } from '@/constants';
+import { Pressable, StyleProp, Text, ViewStyle } from 'react-native';
+import { shadows } from '@/constants/theme';
+
+export type ButtonVariant = 'primary' | 'soft' | 'dark' | 'ghost' | 'danger';
 
 interface PrimaryButtonProps {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'dark' | 'ghost' | 'danger';
+  variant?: ButtonVariant;
   disabled?: boolean;
   className?: string;
+  style?: StyleProp<ViewStyle>;
 }
 
-const BACKGROUNDS: Record<string, string> = {
-  primary: '',
-  dark: 'bg-gray-900',
+const BACKGROUNDS: Record<ButtonVariant, string> = {
+  primary: 'bg-primary',
+  soft: 'bg-primary-50',
+  dark: 'bg-ink',
   ghost: 'bg-transparent',
-  danger: 'bg-transparent',
+  danger: 'bg-danger-50',
 };
 
-const LABELS: Record<string, string> = {
+const LABELS: Record<ButtonVariant, string> = {
   primary: 'text-white',
+  soft: 'text-primary',
   dark: 'text-white',
-  ghost: 'text-gray-500',
-  danger: 'text-red-500',
+  ghost: 'text-muted',
+  danger: 'text-danger-600',
 };
 
+/**
+ * Bouton principal de l'application : une seule hauteur, un seul rayon et
+ * cinq variantes couvrant tous les cas (action, secondaire, discret,
+ * destructrice).
+ */
 export default function PrimaryButton({
   label,
   onPress,
   variant = 'primary',
   disabled = false,
   className = '',
+  style,
 }: PrimaryButtonProps) {
   return (
     <Pressable
@@ -36,12 +47,12 @@ export default function PrimaryButton({
       disabled={disabled}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
-      style={variant === 'primary' ? { backgroundColor: COLORS.primary } : undefined}
-      className={`h-12 items-center justify-center rounded-xl ${BACKGROUNDS[variant]} ${
-        disabled ? 'opacity-50' : ''
+      className={`h-14 items-center justify-center rounded-2xl ${BACKGROUNDS[variant]} ${
+        disabled ? 'opacity-50' : 'active:opacity-90'
       } ${className}`}
+      style={[variant === 'primary' && !disabled ? shadows.raised : undefined, style]}
     >
-      <Text className={`font-semibold ${LABELS[variant]}`}>{label}</Text>
+      <Text className={`text-base font-semibold ${LABELS[variant]}`}>{label}</Text>
     </Pressable>
   );
 }

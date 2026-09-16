@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react';
-import { ScrollView, Text } from 'react-native';
+import { ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import { router } from 'expo-router';
+import Card from '@/components/ui/Card';
+import SectionHeader from '@/components/ui/SectionHeader';
 import EmptyState from '@/components/EmptyState';
 import Header from '@/components/Header';
 import TaskCard from '@/components/TaskCard';
-import { COLORS, getCategory } from '@/constants';
+import { getCategory } from '@/constants';
+import { theme } from '@/constants/theme';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/hooks/useTasks';
 import { formatDay, fromDateKey, toDateKey } from '@/lib/date';
@@ -53,6 +56,21 @@ interface MarkedDate {
   selectedColor?: string;
 }
 
+/** Thème du calendrier aligné sur les tokens (une seule teinte de sélection). */
+const CALENDAR_THEME = {
+  calendarBackground: 'transparent',
+  todayTextColor: theme.colors.primary,
+  arrowColor: theme.colors.textSecondary,
+  monthTextColor: theme.colors.text,
+  textDayFontSize: 14,
+  textDayHeaderFontSize: 12,
+  textMonthFontSize: 16,
+  textSectionTitleColor: theme.colors.textSecondary,
+  textDisabledColor: theme.colors.textMuted,
+  selectedDayBackgroundColor: theme.colors.primary,
+  selectedDayTextColor: theme.colors.onPrimary,
+};
+
 export default function CalendarScreen() {
   const { tasks, toggleTask } = useTasks();
   const { settings } = useSettings();
@@ -75,7 +93,7 @@ export default function CalendarScreen() {
       [selected]: {
         ...(marks[selected] ?? { dots: [] }),
         selected: true,
-        selectedColor: COLORS.primary,
+        selectedColor: theme.colors.primary,
       },
     };
   }, [tasks, selected, settings.categories]);
@@ -83,22 +101,22 @@ export default function CalendarScreen() {
   const dayTasks = useMemo(() => sortTasks(tasksDueOn(tasks, selected), 'date'), [tasks, selected]);
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-slate-50">
-      <ScrollView className="px-4" contentContainerStyle={{ paddingBottom: 150 }}>
-        <Header title="Calendrier" />
+    <SafeAreaView edges={['top']} className="flex-1 bg-canvas">
+      <ScrollView className="px-5" contentContainerStyle={{ paddingBottom: 150 }}>
+        <Header title="Agenda" />
 
-        <Calendar
-          markingType="multi-dot"
-          markedDates={markedDates}
-          onDayPress={(day) => setSelected(day.dateString)}
-          firstDay={1}
-          theme={{ todayTextColor: COLORS.primary, arrowColor: COLORS.primary }}
-          style={{ borderRadius: 16, paddingBottom: 8 }}
-        />
+        <Card padded={false} className="mb-6 p-2">
+          <Calendar
+            markingType="multi-dot"
+            markedDates={markedDates}
+            onDayPress={(day) => setSelected(day.dateString)}
+            firstDay={1}
+            theme={CALENDAR_THEME}
+            style={{ backgroundColor: 'transparent' }}
+          />
+        </Card>
 
-        <Text className="mb-3 mt-6 text-lg font-bold capitalize text-gray-900">
-          {formatDay(fromDateKey(selected))}
-        </Text>
+        <SectionHeader title={formatDay(fromDateKey(selected))} className="mt-2" />
 
         {dayTasks.length > 0 ? (
           dayTasks.map((task) => (
@@ -110,7 +128,7 @@ export default function CalendarScreen() {
             />
           ))
         ) : (
-          <EmptyState emoji="🗓️" title="Aucun devoir ce jour" />
+          <EmptyState emoji="🗓️" title="Aucune tâche ce jour" />
         )}
       </ScrollView>
     </SafeAreaView>

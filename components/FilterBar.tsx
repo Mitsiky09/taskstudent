@@ -1,5 +1,5 @@
-import { Pressable, ScrollView, Text } from 'react-native';
-import { COLORS } from '@/constants';
+import { ScrollView } from 'react-native';
+import Chip from '@/components/ui/Chip';
 
 export interface FilterItem<T extends string> {
   value: T;
@@ -10,34 +10,31 @@ interface FilterBarProps<T extends string> {
   items: FilterItem<T>[];
   value: T;
   onChange: (value: T) => void;
+  className?: string;
 }
 
-export default function FilterBar<T extends string>({ items, value, onChange }: FilterBarProps<T>) {
+/** Barre de filtres horizontale, construite sur la pastille partagée. */
+export default function FilterBar<T extends string>({
+  items,
+  value,
+  onChange,
+  className = 'mb-4',
+}: FilterBarProps<T>) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      className="mb-4 max-h-12"
+      className={className}
       contentContainerStyle={{ gap: 8, paddingVertical: 2 }}
     >
-      {items.map((item) => {
-        const selected = item.value === value;
-        return (
-          <Pressable
-            key={item.value}
-            onPress={() => onChange(item.value)}
-            accessibilityRole="button"
-            accessibilityState={{ selected }}
-            accessibilityLabel={`Filtre ${item.label}`}
-            className={`h-10 justify-center rounded-full px-4 ${selected ? '' : 'bg-gray-100'}`}
-            style={selected ? { backgroundColor: COLORS.primary } : undefined}
-          >
-            <Text className={selected ? 'font-semibold text-white' : 'text-gray-600'}>
-              {item.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+      {items.map((item) => (
+        <Chip
+          key={item.value}
+          label={item.label}
+          selected={item.value === value}
+          onPress={() => onChange(item.value)}
+        />
+      ))}
     </ScrollView>
   );
 }

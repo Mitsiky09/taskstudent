@@ -2,6 +2,7 @@ import { View } from 'react-native';
 import { PRIORITY_COLORS, PRIORITY_LABELS } from '@/constants';
 import { Priority } from '@/types';
 
+/** Pastille de priorité, couleur issue des tokens sémantiques. */
 export default function PriorityDot({ priority }: { priority: Priority }) {
   return (
     <View

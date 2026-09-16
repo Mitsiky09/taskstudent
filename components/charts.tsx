@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import Svg, { Circle, G, Path, Rect, Text as SvgText } from 'react-native-svg';
+import { theme } from '@/constants/theme';
 
 interface ChartDatum {
   label: string;
@@ -11,7 +12,7 @@ interface ChartDatum {
 const BAR_GAP = 10;
 const MAX_FIXED_BARS = 14;
 const FIXED_SLOT = 42;
-const BASE_COLOR = '#4f46e5';
+const BASE_COLOR = theme.colors.primary;
 
 interface BarChartProps {
   data: ChartDatum[];
@@ -52,11 +53,24 @@ export function BarChart({ data, height = 170 }: BarChartProps) {
               opacity={datum.value > 0 ? 1 : 0.12}
             />
             {datum.value > 0 ? (
-              <SvgText x={cx} y={y - 5} fontSize={10} fontWeight="600" fill="#475569" textAnchor="middle">
+              <SvgText
+                x={cx}
+                y={y - 5}
+                fontSize={10}
+                fontWeight="600"
+                fill={theme.colors.textSecondary}
+                textAnchor="middle"
+              >
                 {datum.value}
               </SvgText>
             ) : null}
-            <SvgText x={cx} y={height - 8} fontSize={9} fill="#94a3b8" textAnchor="middle">
+            <SvgText
+              x={cx}
+              y={height - 8}
+              fontSize={9}
+              fill={theme.colors.textMuted}
+              textAnchor="middle"
+            >
               {datum.label}
             </SvgText>
           </G>
@@ -73,9 +87,7 @@ export function BarChart({ data, height = 170 }: BarChartProps) {
     );
   }
 
-  return (
-    <View onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>{content}</View>
-  );
+  return <View onLayout={(e) => setContainerWidth(e.nativeEvent.layout.width)}>{content}</View>;
 }
 
 function polarToCartesian(cx: number, cy: number, r: number, angle: number) {
@@ -130,15 +142,41 @@ export function DonutChart({
 
   return (
     <Svg width={size} height={size}>
-      <Circle cx={cx} cy={cy} r={radius} stroke="#e2e8f0" strokeWidth={strokeWidth} fill="none" />
+      <Circle
+        cx={cx}
+        cy={cy}
+        r={radius}
+        stroke={theme.colors.border}
+        strokeWidth={strokeWidth}
+        fill="none"
+      />
       {segments.map((segment) => (
-        <Path key={segment.path} d={segment.path} stroke={segment.color} strokeWidth={strokeWidth} fill="none" />
+        <Path
+          key={segment.path}
+          d={segment.path}
+          stroke={segment.color}
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
       ))}
-      <SvgText x={cx} y={cy - (centerSubLabel ? 4 : 0)} fontSize={centerLabel ? 18 : 12} fontWeight="700" fill="#0f172a" textAnchor="middle">
+      <SvgText
+        x={cx}
+        y={cy - (centerSubLabel ? 4 : 0)}
+        fontSize={centerLabel ? 18 : 12}
+        fontWeight="700"
+        fill={theme.colors.text}
+        textAnchor="middle"
+      >
         {centerLabel ?? total}
       </SvgText>
       {centerSubLabel ? (
-        <SvgText x={cx} y={cy + 16} fontSize={10} fill="#64748b" textAnchor="middle">
+        <SvgText
+          x={cx}
+          y={cy + 16}
+          fontSize={10}
+          fill={theme.colors.textSecondary}
+          textAnchor="middle"
+        >
           {centerSubLabel}
         </SvgText>
       ) : null}
