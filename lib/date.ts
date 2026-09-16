@@ -116,3 +116,35 @@ export function formatTime(date: Date): string {
 export function formatDateTime(date: Date): string {
   return `${formatShortDate(date)} à ${formatTime(date)}`;
 }
+
+/**
+ * Échéance posée « en fin de journée » (23 h 59) : c'est la valeur par défaut
+ * des tâches créées sans heure précise. L'heure n'a alors aucune signification
+ * pour l'utilisateur et ne doit pas être affichée.
+ */
+export function isEndOfDay(date: Date): boolean {
+  return date.getHours() === 23 && date.getMinutes() >= 59;
+}
+
+/**
+ * Échéance compacte pour les listes : « Aujourd'hui 14:00 », « Demain »,
+ * « Hier », « 12 mars », « 12 mars 2025 ».
+ *
+ * Deux règles de sobriété : l'heure disparaît quand elle vaut 23 h 59
+ * (échéance « fin de journée », jamais choisie par l'utilisateur) et le jour
+ * est nommé plutôt que daté tant qu'il reste proche.
+ */
+export function formatDueLabel(due: Date, now: Date = new Date()): string {
+  const time = isEndOfDay(due) ? '' : formatTime(due);
+  const join = (label: string) => (time ? `${label} ${time}` : label);
+
+  if (isSameDay(due, now)) return join("Aujourd'hui");
+  if (isSameDay(due, addDays(now, 1))) return join('Demain');
+  if (isSameDay(due, addDays(now, -1))) return join('Hier');
+
+  const sameYear = due.getFullYear() === now.getFullYear();
+  const day = sameYear
+    ? formatShortDate(due)
+    : due.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  return time ? `${day}, ${time}` : day;
+}

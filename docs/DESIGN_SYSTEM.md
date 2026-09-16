@@ -110,6 +110,30 @@ Les mêmes valeurs sont disponibles en classes : `bg-primary`, `bg-canvas`,
    géométrie et ses animations sont figées. Seules les couleurs proviennent des
    tokens.
 
+## Contenu d'une carte de tâche
+
+Une carte de liste ne porte que deux lignes. Tout ce qui ne tient pas dans
+cette hiérarchie appartient à l'écran de détail.
+
+1. **Case à cocher + titre + priorité.** Le point de priorité n'apparaît que
+   pour la priorité haute : P3 étant la valeur par défaut à la création,
+   l'afficher partout n'informe pas.
+2. **Catégorie + échéance.** La catégorie est un point coloré suivi du nom en
+   `text-faint` ; l'échéance utilise `formatDueLabel` (« Aujourd'hui 14:00 »,
+   « Demain », « Hier », « 12 mars ») et **masque l'heure quand elle vaut
+   23 h 59**, valeur par défaut d'une échéance « fin de journée » que
+   l'utilisateur n'a jamais choisie. L'état passe par la couleur : `danger` si
+   retard, `warning-600` si reportée — pas de badge, qui répéterait
+   l'information.
+
+À droite de la seconde ligne, deux indicateurs seulement, et seulement s'ils
+s'appliquent : la répétition et l'avancement des sous-tâches (`2/4`).
+
+**Interdits sur une carte** : la durée estimée, la description, les badges
+d'état, plus d'une icône d'action. Le report s'obtient par un **appui long**
+sur la carte, et l'écran de détail conserve ses raccourcis « Demain / +3 jours
+/ +1 semaine ».
+
 ## Ajouter un écran
 
 ```tsx

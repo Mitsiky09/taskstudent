@@ -1,16 +1,25 @@
 import { Text, View } from 'react-native';
 import { Subject } from '@/types';
-import { withAlpha } from '@/constants/theme';
 
-/** Étiquette de catégorie : fond teinté dérivé de la couleur de la catégorie. */
-export default function SubjectTag({ category }: { category?: Subject }) {
+/**
+ * Mention de catégorie dans une liste : point coloré + nom discret.
+ *
+ * L'ancienne pastille à fond teinté occupait toute une ligne de la carte pour
+ * une information secondaire ; la couleur de la catégorie suffit à la
+ * reconnaître, le nom reste lisible sans attirer l'œil.
+ */
+export default function SubjectTag({
+  category,
+  className = '',
+}: {
+  category?: Subject;
+  className?: string;
+}) {
   if (!category) return null;
   return (
-    <View
-      className="self-start rounded-full px-2.5 py-1"
-      style={{ backgroundColor: withAlpha(category.color, 0.14) }}
-    >
-      <Text className="text-xs font-semibold" style={{ color: category.color }}>
+    <View className={`flex-row items-center ${className}`}>
+      <View className="h-2 w-2 rounded-full" style={{ backgroundColor: category.color }} />
+      <Text className="ml-1.5 text-[13px] text-faint" numberOfLines={1}>
         {category.name}
       </Text>
     </View>

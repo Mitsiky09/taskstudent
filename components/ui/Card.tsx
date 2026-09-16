@@ -8,6 +8,7 @@ interface CardProps {
   variant?: 'panel' | 'card';
   padded?: boolean;
   onPress?: () => void;
+  onLongPress?: () => void;
   /** Libellé d'accessibilité, requis dès que la carte est cliquable. */
   accessibilityLabel?: string;
   className?: string;
@@ -23,6 +24,7 @@ export default function Card({
   variant = 'panel',
   padded = true,
   onPress,
+  onLongPress,
   accessibilityLabel,
   className = '',
   style,
@@ -35,6 +37,7 @@ export default function Card({
     return (
       <Pressable
         onPress={onPress}
+        onLongPress={onLongPress}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         className={`${classes} active:opacity-90`}

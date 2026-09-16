@@ -17,7 +17,7 @@ import { FALLBACK_PROJECT } from '@/constants';
 import { surfaceStyles, theme } from '@/constants/theme';
 import { useSettings } from '@/context/SettingsContext';
 import { useTasks } from '@/hooks/useTasks';
-import { fromDateKey } from '@/lib/date';
+import { formatDueLabel, fromDateKey } from '@/lib/date';
 import { createId } from '@/lib/id';
 
 type PickerType = 'category' | 'date' | null;
@@ -58,18 +58,6 @@ export default function NewTask() {
   const handleClose = () => {
     if (router.canGoBack()) router.back();
     else router.replace('/(tabs)');
-  };
-
-  const formatDate = (date: Date) => {
-    const now = new Date();
-    const today = now.toDateString() === date.toDateString();
-    const tomorrowDate = new Date(now);
-    tomorrowDate.setDate(now.getDate() + 1);
-    const tomorrow = tomorrowDate.toDateString() === date.toDateString();
-    const time = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    if (today) return `Auj. ${time}`;
-    if (tomorrow) return `Demain ${time}`;
-    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) + ` ${time}`;
   };
 
   const addSubtask = () => {
@@ -200,7 +188,9 @@ export default function NewTask() {
               accessibilityLabel="Choisir la date d'échéance"
             >
               <Ionicons name="calendar-outline" size={12} color={theme.colors.icon} />
-              <Text className="ml-1.5 text-[12px] font-semibold text-soft">{formatDate(due)}</Text>
+              <Text className="ml-1.5 text-[12px] font-semibold text-soft">
+                {formatDueLabel(due)}
+              </Text>
             </Pressable>
 
             <View className="flex-1" />
