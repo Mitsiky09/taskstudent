@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "lib": ["ES2021"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "types": ["jest", "node"]
+  },
+  "include": [
+    "lib/date.ts",
+    "lib/tasks.ts",
+    "lib/quickadd.ts",
+    "lib/serialize.ts",
+    "lib/migration.ts",
+    "lib/id.ts",
+    "constants/**/*.ts",
+    "types/**/*.ts",
+    "__tests__/**/*.ts"
+  ]
+}
