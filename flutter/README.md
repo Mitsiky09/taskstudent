@@ -1,130 +1,138 @@
-# TaskStudent — noyau métier (Dart)
+# TaskStudent — port Flutter
 
-Port Dart de la logique de l'application **TaskStudent** (Expo / React Native,
-dépôt `Mitsiky09/taskstudent`). Ce paquet ne contient **aucun widget** : il
-regroupe les modèles, la logique pure, la migration des données et l'export, de
-sorte que tout se teste avec `dart test`, sans SDK Flutter installé.
+Port de l'application Expo/React Native `Mitsiky09/taskstudent`, organisé en
+deux paquets :
 
 ```
 flutter/
-├── pubspec.yaml              # paquet taskstudent_core, zéro dépendance d'exécution
-├── analysis_options.yaml     # lints/recommended + strict-casts / strict-inference
-├── lib/
-│   ├── taskstudent.dart      # baril : un seul import pour tout consommer
-│   └── src/
-│       ├── constants.dart    # catégories, couleurs, libellés, clés de stockage
-│       ├── theme.dart        # tokens du design system (couleurs en #rrggbb)
-│       ├── storage.dart      # interface KeyValueStore + lectures JSON protégées
-│       ├── models/task.dart  # Task, Subtask, Subject, Settings, LocalUser, TaskInput
-│       └── logic/
-│           ├── dates.dart           # clés de jour, périodes, formatage français
-│           ├── task_logic.dart      # filtres, tris, stats, tendances, auto-archive
-│           ├── task_repository.dart # mutations (toggle, report, sous-tâches) + persistance
-│           ├── migration.dart       # conversion des données de l'ancien modèle
-│           ├── serialize.dart       # export CSV (RFC 4180) et JSON
-│           └── ids.dart             # identifiants locaux
-└── test/                     # 4 suites / 101 cas, miroir des suites Jest d'origine
+├── packages/
+│   ├── taskstudent_core/     # logique métier pure (Dart, zéro dépendance)
+│   └── taskstudent_app/      # application Flutter (MVVM, Riverpod 3, Hive CE)
+└── README.md
 ```
 
-## Vérifier
+| Paquet | Rôle | Dépendances | Se teste avec |
+| --- | --- | --- | --- |
+| `taskstudent_core` | entités, dates, filtres, statistiques, migration, export | aucune | `dart test` |
+| `taskstudent_app` | écrans, état, persistance | flutter, flutter_riverpod, hive_ce, path_provider | `flutter test` |
+
+Cette séparation n'est pas décorative : elle garantit qu'aucune règle de gestion
+ne peut se glisser dans un widget, et que le cœur de l'application se teste sans
+émulateur ni système de fichiers.
+
+## Architecture MVVM
+
+```
+┌──────────────────────── Vue ────────────────────────┐
+│ presentation/screens/  ·  presentation/widgets/      │   widgets muets,
+│ HomeScreen · TaskDetailScreen · StatsScreen · TaskTile│   aucun calcul
+└───────────────────────────┬──────────────────────────┘
+                            │ ref.watch / ref.read
+┌────────────────────── ViewModel ─────────────────────┐
+│ presentation/viewmodels/                             │   Notifier Riverpod 3
+│ TasksNotifier · SettingsNotifier                     │   état immuable + ==
+│ presentation/providers.dart  (point de composition)  │
+└───────────────────────────┬──────────────────────────┘
+                            │ TaskRepository (du noyau)
+┌─────────────────────── Modèle ───────────────────────┐
+│ taskstudent_core : entités et règles métier          │
+│ data/hive/ : HiveKeyValueStore, HiveBootstrap        │   persistance
+└──────────────────────────────────────────────────────┘
+```
+
+* **Modèle** — `taskstudent_core` (règles métier) + `data/hive/` (persistance).
+  Hive n'apparaît que dans deux fichiers ; le noyau ne connaît que l'interface
+  `KeyValueStore` (trois méthodes asynchrones).
+* **ViewModel** — un `Notifier` Riverpod par domaine. Ils exposent un état
+  immuable ([TasksState], [SettingsState]) et délèguent toute règle au noyau.
+* **Vue** — des widgets qui reçoivent des données et des rappels. `TaskTile`,
+  par exemple, ne connaît ni Riverpod ni Hive.
+
+## Pourquoi ces paquets
+
+**Riverpod 3** (`flutter_riverpod: ^3.0.0`). La série 3 unifie l'API :
+`AutoDisposeNotifier` et `FamilyNotifier` disparaissent au profit d'un seul
+`Notifier`, et `Ref` perd son paramètre générique. `StateProvider` et
+`StateNotifierProvider` sont devenus « legacy » (import
+`flutter_riverpod/legacy.dart`) : ce projet ne les utilise pas, tout passe par
+`Notifier`. Autre point exploité ici : tous les providers filtrent désormais
+leurs mises à jour avec `==`, d'où l'`operator ==` sur `Task`, `Settings`,
+`TasksState` et `SettingsState` — sans lui, chaque reconstruction d'objet
+redessinerait l'écran.
+
+**Hive CE** (`hive_ce: ^2.19.0`). Le paquet `hive` d'origine n'est plus maintenu
+par son auteur ; `hive_ce` (Community Edition) en est la continuation, avec la
+même API. Les données sont stockées en JSON texte sous les clés
+`@taskstudent/tasks` et `@taskstudent/settings` : le format reste identique à
+celui de l'application Expo, un enregistrement écrit par l'une est lisible par
+l'autre.
+
+`^3.0.0` et `^2.19.0` laissent `pub get` choisir la dernière version compatible
+(hive_ce 2.19.3 est la dernière publiée en février 2026).
+
+## Lancer l'application
 
 ```bash
-cd flutter
-dart pub get
-dart test
+cd flutter/packages/taskstudent_app
+flutter create .            # génère android/, ios/, web/… (une seule fois)
+flutter pub get
+flutter run
 ```
 
-`dart test` ne nécessite pas Flutter : le paquet n'importe que `dart:core`,
-`dart:convert` et `dart:math`.
+Les tests :
 
-## Correspondance avec l'application d'origine
+```bash
+cd flutter/packages/taskstudent_core && dart pub get && dart test
+cd flutter/packages/taskstudent_app  && flutter test
+```
 
-| React Native | Dart |
+Le test du ViewModel (`test/tasks_viewmodel_test.dart`) remplace Hive par le
+`MemoryStore` du noyau via `keyValueStoreProvider.overrideWithValue(...)` : il
+vérifie le chemin complet Vue → ViewModel → noyau → stockage sans écrire sur le
+disque.
+
+## Ce qui est fait
+
+| Écran / brique | État |
 | --- | --- |
-| `types/index.ts` | `lib/src/models/task.dart` |
-| `lib/date.ts` | `lib/src/logic/dates.dart` |
-| `lib/tasks.ts` | `lib/src/logic/task_logic.dart` |
-| `context/TasksContext.tsx` | `lib/src/logic/task_repository.dart` |
-| `lib/migration.ts` | `lib/src/logic/migration.dart` |
-| `lib/serialize.ts` | `lib/src/logic/serialize.dart` |
-| `lib/id.ts` | `lib/src/logic/ids.dart` |
-| `lib/storage.ts` | `lib/src/storage.dart` |
-| `constants/index.ts` | `lib/src/constants.dart` |
-| `constants/theme.ts` | `lib/src/theme.dart` |
-| `__tests__/*.test.ts` | `test/*_test.dart` |
+| Noyau métier complet + 101 cas de test | fait |
+| Thème Material généré depuis les tokens du noyau | fait |
+| Persistance Hive + injection dans Riverpod | fait |
+| Accueil : sections par jour, filtres, report, création rapide | fait |
+| Détail de tâche : sous-tâches, report, archive, suppression | fait |
+| Statistiques : semaine, tendance 14 jours, répartition | fait |
 
-## Choix de portage
+## Ce qui reste à porter
 
-1. **Format de persistance identique.** Mêmes noms de champs, mêmes valeurs
-   (`'active'`, `'medium'`, `'weekly'`), dates en ISO 8601. Un export JSON
-   produit par l'application Expo se recharge tel quel, et inversement. Les
-   tests `migration_test.dart` le vérifient par un aller-retour complet.
-2. **Aucune dépendance d'exécution.** Le formatage français des dates est porté
-   à la main (`janv.`, `févr.`, `mardi 10 mars`) plutôt que délégué à `intl`, ce
-   qui supprime l'initialisation de locale et ses risques d'exception au
-   démarrage. Les libellés sont couverts par `date_test.dart`.
-3. **Dates stockées en UTC, comparées en heure locale.** `Task.due` renvoie
-   toujours une date locale ; toute clé de jour passe par `toDateKey`. C'est la
-   règle du projet d'origine (un bug d'affichage en dépendait) et elle est
-   ré-testée ici.
-4. **Le stockage est une interface.** `KeyValueStore` définit trois méthodes ;
-   l'implémentation `shared_preferences` appartient à la couche applicative.
-   `MemoryStore` sert aux tests.
-5. **Les tokens de design restent des chaînes `#rrggbb`.** Une `Color`
-   demanderait `dart:ui`, donc Flutter. La couche applicative convertit
-   (`Color(int.parse(hex.substring(1), radix: 16) | 0xFF000000)`).
-6. **Les mutations sont des fonctions pures**, appliquées par `TaskRepository`.
-   Les règles métier du fournisseur de contexte React sont reproduites à
-   l'identique, y compris le cas des tâches répétées : cocher une tâche
-   quotidienne ne la termine pas, elle avance d'un jour.
-
-## Ce qui n'est pas encore porté
-
-- **L'analyseur de saisie rapide** (`lib/quickadd.ts`, ~530 lignes : dates
-  relatives en français, heures, récurrences). C'est le plus gros morceau
-  restant ; il est purement textuel et se portera sans dépendance.
-- **Les notifications locales** (`lib/notifications.ts`) : elles exigent un
-  plugin. Le noyau expose `task.reminders` et laisse la programmation à la
-  couche applicative.
-- **L'interface** : écrans, navigation, thème Material. Les tokens et la logique
-  sont prêts à être branchés.
-
-## Brancher le noyau sur une application Flutter
-
-```bash
-flutter create taskstudent_app          # application séparée
-cd taskstudent_app
-# pubspec.yaml :
-#   dependencies:
-#     taskstudent_core:
-#       path: ../taskstudent/flutter
-```
-
-Puis :
-
-```dart
-import 'package:taskstudent_core/taskstudent.dart';
-
-final store = SharedPreferencesStore(await SharedPreferences.getInstance());
-final repository = TaskRepository(store: store);
-await repository.load(autoArchive: true);
-
-final enRetard = filterTasks(repository.tasks, TaskFilter.overdue);
-final stats = computeStats(repository.tasks);
-```
+* Écrans **Calendrier**, **À venir**, **Archives**, **Profil** et
+  **authentification** (la logique qu'ils affichent existe déjà dans le noyau :
+  `groupByDate`, `allUpcomingTasks`, `archivedThisMonth`, `LocalUser`).
+* Navigation par onglets (`NavigationBar`) équivalente au bottom nav de
+  l'application Expo.
+* **Saisie rapide** (`lib/quickadd.ts`, ~530 lignes : dates relatives en
+  français, heures, récurrences) — purement textuel, il rejoindra le noyau.
+* **Notifications locales** : le noyau expose `task.reminders`, la
+  programmation demande un plugin (`flutter_local_notifications`).
+* Création/édition complète d'une tâche (le dialogue actuel couvre le cas
+  simple : titre + catégorie + échéance du jour).
 
 ## État de la vérification
 
-Ce paquet a été écrit dans un environnement **sans SDK Dart ni accès à
-pub.dev** : `dart analyze` et `dart test` n'ont donc pas pu y être exécutés.
-Les contrôles suivants ont été menés à la place, sur les 16 fichiers `.dart` :
-équilibre des délimiteurs hors chaînes et commentaires, résolution de tous les
-`import`/`export`, et résolution de chaque nom appelé ou préfixé
-(`Classe.membre`) vers une déclaration existante. Ces contrôles ont détecté et
-fait corriger une erreur réelle (mauvais chemin d'import dans
-`constants.dart`).
+Aucun SDK Dart ni Flutter n'était disponible dans l'environnement d'écriture, et
+pub.dev y est inaccessible : `flutter pub get`, `dart analyze` et les tests
+**n'ont pas pu être exécutés**. À la place, un contrôle statique a été passé sur
+les 29 fichiers `.dart` (équilibre des délimiteurs hors chaînes et commentaires,
+résolution de chaque `import`, résolution de chaque fonction appelée et de
+chaque `MaClasse.membre` vers une déclaration existante) : aucun problème. Ce
+contrôle a été validé en y réinjectant des fautes — il signale bien un appel de
+fonction inexistant comme un membre inexistant.
 
-**Reste à faire côté utilisateur :** `dart pub get && dart test`, puis
-`dart analyze`. Les suites de test sont écrites pour `package:test` et couvrent
-les mêmes cas que les suites Jest d'origine, augmentées de l'aller-retour de
-stockage et des mutations du dépôt.
+Il a déjà permis de corriger une erreur réelle : un chemin d'import faux dans
+`constants.dart` du noyau.
+
+**Reste à faire de ton côté**, dans l'ordre :
+
+```bash
+cd flutter/packages/taskstudent_core && dart pub get && dart test && dart analyze
+cd ../taskstudent_app && flutter pub get && flutter test && flutter analyze
+```
