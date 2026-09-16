@@ -1,0 +1,18 @@
+# Artéfacts Dart / Flutter — jamais versionnés.
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+doc/api/
+coverage/
+*.g.dart
+
+# Généré par `flutter create .` quand le paquet devient une application.
+android/
+ios/
+linux/
+macos/
+windows/
+web/
